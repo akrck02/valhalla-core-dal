@@ -1,0 +1,29 @@
+name: Publish dev release
+on:
+  push:
+    branches: [ dev ]
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - run: npm install
+    - name : version
+      run: echo "::set-output name=version::$(node version.js)" 
+      id: version
+
+    - name: Compile typescript
+      run: npm run compile
+
+    - name: Create a Release of commit
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: ${{ github.token }}
+        automatic_release_tag: dev-latest
+        prerelease: true
+        title: ${{ steps.version.outputs.version }}-${{ github.sha }}
+
