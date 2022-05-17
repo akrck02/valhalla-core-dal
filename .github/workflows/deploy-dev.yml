@@ -19,6 +19,7 @@ jobs:
     - name: test the code
       run: npm run test
   build:
+    permissions: write-all
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v3
