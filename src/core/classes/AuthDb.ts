@@ -3,8 +3,8 @@ import { Database } from "./Database";
 
 export class AuthDb extends Database {
 
-    constructor() {
-        super("auth");
+    constructor(name :string = "auth") {
+        super(name);
     }
 
     async createTables() {

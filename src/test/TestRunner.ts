@@ -1,5 +1,5 @@
 import Logger from "./lib/Logger";
-import { AuthTestSuite } from "./AuthTestSuite";
+import { AuthTestSuite } from "./auth/AuthTestSuite";
 
 const TEST_SUITES = [
     AuthTestSuite

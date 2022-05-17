@@ -9,8 +9,8 @@
   "scripts": {
     "compile": "tsc ",
     "compile-watch": "tsc -w",
-    "test" : "node out/test/TestRunner.js",
-    "version" : "node version.js"
+    "test": "node out/test/TestRunner.js",
+    "version": "node version.js"
   },
   "repository": {
     "type": "git",
@@ -33,8 +33,8 @@
     "sqlite3": "^5.0.2"
   },
   "devDependencies": {
+    "@types/jsonwebtoken": "^8.5.8",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2"
   }
 }
-
