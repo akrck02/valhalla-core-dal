@@ -19,31 +19,6 @@ jobs:
     - name: test the code
       run: npm run test
 
-  build:
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-
-    - run: npm install
-    - name : version
-      run: echo "::set-output name=version::$(node version.js)" 
-      id: version
-
-    - name: Compile typescript
-      run: npm run compile
-
-    - name: Create a Release of commit
-      uses: "marvinpinto/action-automatic-releases@latest"
-      with:
-        repo_token: ${{ github.token }}
-        automatic_release_tag: ${{ steps.version.outputs.version }}
-        prerelease: false
-        title: ${{ steps.version.outputs.version }}
-          files : | 
-            LICENSE
 
 
 
