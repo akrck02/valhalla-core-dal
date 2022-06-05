@@ -1,4 +1,4 @@
-name: Publish main release
+name: Build and test
 on:
   push:
     branches: [ main ]
