@@ -30,7 +30,7 @@
   "dependencies": {
     "jsonwebtoken": "^9.0.0",
     "sqlite": "^4.0.23",
-    "sqlite3": "^5.0.2"
+    "sqlite3": "^5.1.5"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^8.5.8",
