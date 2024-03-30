@@ -1,9 +1,10 @@
-package services
+package tests
 
 import (
 	"testing"
 
 	"github.com/akrck02/valhalla-core-dal/database"
+	userdal "github.com/akrck02/valhalla-core-dal/services/user"
 	"github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
@@ -218,7 +219,7 @@ func TestLoginWrongEmail(t *testing.T) {
 	LoginTestUserWithError(t, conn, client, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, error.USER_NOT_AUTHORIZED)
 
 	user.Email = realEmail
-	DeleteUser(conn, client, user)
+	userdal.DeleteUser(conn, client, user)
 }
 
 func TestLoginAuth(t *testing.T) {
@@ -295,7 +296,7 @@ func TestEditUserEmail(t *testing.T) {
 
 	// Change the user email
 	log.Info("Changing user email")
-	emailChangeRequest := EmailChangeRequest{
+	emailChangeRequest := userdal.EmailChangeRequest{
 		Email:    email,
 		NewEmail: newEmail,
 	}
@@ -313,7 +314,7 @@ func TestEditUserEmailNoEmail(t *testing.T) {
 	conn := database.Connect(*client)
 	defer database.Disconnect(*client, conn)
 
-	emailChangeRequest := EmailChangeRequest{}
+	emailChangeRequest := userdal.EmailChangeRequest{}
 	EditTestUserEmailWithError(t, conn, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_EMAIL)
 
 }
@@ -327,7 +328,7 @@ func TestEditUserEmailNoDotEmail(t *testing.T) {
 	email := mock.Email()
 	newEmail := mock.EmailNotDot()
 
-	emailChangeRequest := EmailChangeRequest{
+	emailChangeRequest := userdal.EmailChangeRequest{
 		Email:    email,
 		NewEmail: newEmail,
 	}
@@ -345,7 +346,7 @@ func TestEditUserEmailNoAtEmail(t *testing.T) {
 	email := mock.Email()
 	newEmail := mock.EmailNotAt()
 
-	emailChangeRequest := EmailChangeRequest{
+	emailChangeRequest := userdal.EmailChangeRequest{
 		Email:    email,
 		NewEmail: newEmail,
 	}
@@ -363,7 +364,7 @@ func TestEditUserEmailShortEmail(t *testing.T) {
 	email := mock.Email()
 	newEmail := mock.EmailShort()
 
-	emailChangeRequest := EmailChangeRequest{
+	emailChangeRequest := userdal.EmailChangeRequest{
 		Email:    email,
 		NewEmail: newEmail,
 	}
@@ -381,7 +382,7 @@ func TestEditUserEmailNotFound(t *testing.T) {
 	email := mock.Email()
 	newEmail := "xXx" + mock.Email()
 
-	emailChangeRequest := EmailChangeRequest{
+	emailChangeRequest := userdal.EmailChangeRequest{
 		Email:    email,
 		NewEmail: newEmail,
 	}
@@ -419,7 +420,7 @@ func TestEditUserEmailExists(t *testing.T) {
 	log.Jump()
 
 	// Change the email
-	emailChangeRequest := EmailChangeRequest{
+	emailChangeRequest := userdal.EmailChangeRequest{
 		Email:    email,
 		NewEmail: newEmail,
 	}
@@ -439,7 +440,7 @@ func TestEditUserSameEmail(t *testing.T) {
 	defer database.Disconnect(*client, conn)
 
 	email := mock.Email()
-	emailChangeRequest := EmailChangeRequest{
+	emailChangeRequest := userdal.EmailChangeRequest{
 		Email:    email,
 		NewEmail: email,
 	}
@@ -631,7 +632,7 @@ func TestValidationCode(t *testing.T) {
 	user := RegisterMockTestUser(t, conn, client)
 
 	// get the user
-	user, err := GetUser(conn, client, user, true)
+	user, err := userdal.GetUser(conn, client, user, true)
 
 	if err != nil {
 		t.Error("The user was not found", err)
@@ -639,7 +640,7 @@ func TestValidationCode(t *testing.T) {
 	}
 
 	// validate the user
-	err = ValidateUser(conn, client, user.ValidationCode)
+	err = userdal.ValidateUser(conn, client, user.ValidationCode)
 
 	if err != nil {
 		t.Error("The user was not validated", err)

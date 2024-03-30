@@ -1,4 +1,4 @@
-package services
+package tests
 
 import (
 	"log"
@@ -6,6 +6,8 @@ import (
 
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-dal/mock"
+	devicedal "github.com/akrck02/valhalla-core-dal/services/device"
+	userdal "github.com/akrck02/valhalla-core-dal/services/user"
 	"github.com/akrck02/valhalla-core-sdk/models"
 )
 
@@ -23,7 +25,7 @@ func TestDeviceExists(t *testing.T) {
 		Password: mock.Password(),
 	}
 
-	err := Register(conn, client, &user)
+	err := userdal.Register(conn, client, &user)
 
 	if err != nil {
 		t.Error(err)
@@ -37,7 +39,7 @@ func TestDeviceExists(t *testing.T) {
 		UserAgent: mock.Platform(),
 	}
 
-	_, error := AddUserDevice(conn, client, &user, &expected)
+	_, error := devicedal.AddUserDevice(conn, client, &user, &expected)
 
 	if error != nil {
 		t.Error(err)
@@ -45,7 +47,7 @@ func TestDeviceExists(t *testing.T) {
 
 	// check if device exists
 	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	obtained, error := FindDevice(conn, coll, &expected)
+	obtained, error := devicedal.FindDevice(conn, coll, &expected)
 
 	if error != nil {
 		t.Error(err)
@@ -59,14 +61,14 @@ func TestDeviceExists(t *testing.T) {
 	log.Print("Device found: ", obtained)
 
 	// delete device
-	error = DeleteDevice(conn, client, &expected)
+	error = devicedal.DeleteDevice(conn, client, &expected)
 
 	if error != nil {
 		t.Error(err)
 	}
 
 	// delete user
-	err = DeleteUser(conn, client, &user)
+	err = userdal.DeleteUser(conn, client, &user)
 
 	if err != nil {
 		t.Error(err)
@@ -88,7 +90,7 @@ func TestDeviceNotExists(t *testing.T) {
 		Password: mock.Password(),
 	}
 
-	err := Register(conn, client, &user)
+	err := userdal.Register(conn, client, &user)
 
 	if err != nil {
 		t.Error(err)
@@ -102,7 +104,7 @@ func TestDeviceNotExists(t *testing.T) {
 		UserAgent: mock.Platform(),
 	}
 
-	_, error := AddUserDevice(conn, client, &user, &expected)
+	_, error := devicedal.AddUserDevice(conn, client, &user, &expected)
 
 	if error != nil {
 		t.Error(err)
@@ -110,7 +112,7 @@ func TestDeviceNotExists(t *testing.T) {
 
 	// check if device exists
 	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	obtained, error := FindDevice(conn, coll, &models.Device{
+	obtained, error := devicedal.FindDevice(conn, coll, &models.Device{
 		Token: mock.Token(),
 	})
 
@@ -122,14 +124,14 @@ func TestDeviceNotExists(t *testing.T) {
 	log.Print("Device not found: ", obtained)
 
 	// delete device
-	error = DeleteDevice(conn, client, &expected)
+	error = devicedal.DeleteDevice(conn, client, &expected)
 
 	if error != nil {
 		t.Error(err)
 	}
 
 	// delete user
-	err = DeleteUser(conn, client, &user)
+	err = userdal.DeleteUser(conn, client, &user)
 
 	if err != nil {
 		t.Error(err)

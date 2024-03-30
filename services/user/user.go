@@ -1,15 +1,17 @@
-package services
+package userdal
 
 import (
 	"context"
 
 	"github.com/akrck02/valhalla-core-dal/configuration"
 	"github.com/akrck02/valhalla-core-dal/database"
+	devicedal "github.com/akrck02/valhalla-core-dal/services/device"
 	"github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
 	"github.com/akrck02/valhalla-core-sdk/utils"
+
 	"github.com/golang-jwt/jwt/v5"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -138,7 +140,7 @@ func Login(conn context.Context, client *mongo.Client, user *models.User, ip str
 	}
 
 	device := &models.Device{Address: ip, UserAgent: address}
-	token, err := AddUserDevice(conn, client, found, device)
+	token, err := devicedal.AddUserDevice(conn, client, found, device)
 
 	if err != nil {
 		return "", &models.Error{
@@ -173,7 +175,7 @@ func LoginAuth(conn context.Context, client *mongo.Client, auth *models.AuthLogi
 	}
 
 	var devices = client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	device, deviceFindingError := FindDeviceByAuthToken(conn, devices, &filter)
+	device, deviceFindingError := devicedal.FindDeviceByAuthToken(conn, devices, &filter)
 
 	if deviceFindingError != nil || device == nil {
 		return &models.Error{

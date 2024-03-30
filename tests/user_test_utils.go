@@ -1,10 +1,11 @@
-package services
+package tests
 
 import (
 	"context"
 	"testing"
 
 	"github.com/akrck02/valhalla-core-dal/mock"
+	userdal "github.com/akrck02/valhalla-core-dal/services/user"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -44,7 +45,7 @@ func RegisterTestUser(t *testing.T, conn context.Context, client *mongo.Client, 
 	log.FormattedInfo("Password: ${0}", user.Password)
 	log.FormattedInfo("Username: ${0}", user.Username)
 
-	err := Register(conn, client, user)
+	err := userdal.Register(conn, client, user)
 
 	if err != nil {
 		t.Error("The user was not registered", err)
@@ -68,7 +69,7 @@ func RegisterTestUserWithError(t *testing.T, conn context.Context, client *mongo
 	log.FormattedInfo("Password: ${0}", user.Password)
 	log.FormattedInfo("Username: ${0}", user.Username)
 
-	err := Register(conn, client, user)
+	err := userdal.Register(conn, client, user)
 
 	if err == nil {
 		t.Error("The user was registered.")
@@ -99,7 +100,7 @@ func LoginTestUser(t *testing.T, conn context.Context, client *mongo.Client, use
 	log.FormattedInfo("Logging in user: ${0}", user.Email)
 	log.FormattedInfo("Password: ${0}", user.Password)
 
-	token, err := Login(conn, client, user, ip, userAgent)
+	token, err := userdal.Login(conn, client, user, ip, userAgent)
 
 	if err != nil {
 		t.Error("The user was not logged in", err)
@@ -111,7 +112,7 @@ func LoginTestUser(t *testing.T, conn context.Context, client *mongo.Client, use
 		return ""
 	}
 
-	_, err = IsTokenValid(client, token)
+	_, err = userdal.IsTokenValid(client, token)
 
 	if err != nil {
 		t.Error("The token was not validated", err)
@@ -139,7 +140,7 @@ func LoginTestUserWithError(t *testing.T, conn context.Context, client *mongo.Cl
 	log.FormattedInfo("Logging in user: ${0}", user.Email)
 	log.FormattedInfo("Password: ${0}", user.Password)
 
-	_, err := Login(conn, client, user, ip, userAgent)
+	_, err := userdal.Login(conn, client, user, ip, userAgent)
 
 	if err == nil {
 		t.Error("The user was logged in.")
@@ -173,7 +174,7 @@ func LoginAuthTestUser(t *testing.T, conn context.Context, client *mongo.Client,
 		AuthToken: token,
 	}
 
-	err := LoginAuth(conn, client, authLogin, mock.Ip(), mock.Platform())
+	err := userdal.LoginAuth(conn, client, authLogin, mock.Ip(), mock.Platform())
 
 	if err != nil {
 		t.Error("The token is not valid", err)
@@ -194,7 +195,7 @@ func DeleteTestUser(t *testing.T, conn context.Context, client *mongo.Client, us
 
 	log.FormattedInfo("Deleting user: ${0}", user.Email)
 
-	err := DeleteUser(conn, client, user)
+	err := userdal.DeleteUser(conn, client, user)
 
 	if err != nil {
 		t.Error("The user was not deleted", err)
@@ -217,7 +218,7 @@ func DeleteTestUserWithError(t *testing.T, conn context.Context, client *mongo.C
 
 	log.FormattedInfo("Deleting user: ${0}", user.Email)
 
-	err := DeleteUser(conn, client, user)
+	err := userdal.DeleteUser(conn, client, user)
 
 	if err == nil {
 		t.Error("The user was deleted.")
@@ -241,12 +242,12 @@ func DeleteTestUserWithError(t *testing.T, conn context.Context, client *mongo.C
 // [param] client | *mongo.Client : mongo client object
 // [param] user | *models.User : user object
 
-func EditTestUserEmail(t *testing.T, conn context.Context, client *mongo.Client, emailChangeRequest *EmailChangeRequest) {
+func EditTestUserEmail(t *testing.T, conn context.Context, client *mongo.Client, emailChangeRequest *userdal.EmailChangeRequest) {
 
 	log.FormattedInfo("Editing user mail: ${0}", emailChangeRequest.Email)
 	log.FormattedInfo("New email: ${0}", emailChangeRequest.NewEmail)
 
-	err := EditUserEmail(conn, client, emailChangeRequest)
+	err := userdal.EditUserEmail(conn, client, emailChangeRequest)
 
 	if err != nil {
 		t.Error("The user was not edited", err)
@@ -265,12 +266,12 @@ func EditTestUserEmail(t *testing.T, conn context.Context, client *mongo.Client,
 // [param] user | *models.User : user object
 // [param] status | int : HTTP status
 // [param] errorcode | int : error code
-func EditTestUserEmailWithError(t *testing.T, conn context.Context, client *mongo.Client, emailChangeRequest *EmailChangeRequest, status int, errorcode int) {
+func EditTestUserEmailWithError(t *testing.T, conn context.Context, client *mongo.Client, emailChangeRequest *userdal.EmailChangeRequest, status int, errorcode int) {
 
 	log.FormattedInfo("Editing user mail: ${0}", emailChangeRequest.Email)
 	log.FormattedInfo("New email: ${0}", emailChangeRequest.NewEmail)
 
-	err := EditUserEmail(conn, client, emailChangeRequest)
+	err := userdal.EditUserEmail(conn, client, emailChangeRequest)
 
 	if err == nil {
 		t.Error("The user was edited.")
@@ -298,7 +299,7 @@ func EditTestUserEmailWithError(t *testing.T, conn context.Context, client *mong
 func EditTestUser(t *testing.T, conn context.Context, client *mongo.Client, user *models.User) {
 
 	log.FormattedInfo("Editing user: ${0}", user.Email)
-	err := EditUser(conn, client, user)
+	err := userdal.EditUser(conn, client, user)
 
 	if err != nil {
 		t.Error("The user was not edited", err)
@@ -320,7 +321,7 @@ func EditTestUser(t *testing.T, conn context.Context, client *mongo.Client, user
 func EditTestUserWithError(t *testing.T, conn context.Context, client *mongo.Client, user *models.User, status int, errorcode int) {
 
 	log.FormattedInfo("Editing user: ${0}", user.Email)
-	err := EditUser(conn, client, user)
+	err := userdal.EditUser(conn, client, user)
 
 	if err == nil {
 		t.Error("The user was edited.")
@@ -347,7 +348,7 @@ func ValidateTestTokenWithError(t *testing.T, conn context.Context, client *mong
 
 	log.FormattedInfo("Validating token: ${0}", token)
 
-	_, err := IsTokenValid(client, token)
+	_, err := userdal.IsTokenValid(client, token)
 
 	if err == nil {
 		t.Error("The token was validated.")
