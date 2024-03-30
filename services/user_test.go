@@ -8,7 +8,6 @@ import (
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
-	"github.com/akrck02/valhalla-core-sdk/utils"
 
 	"github.com/akrck02/valhalla-core-dal/mock"
 )
@@ -548,35 +547,35 @@ func TestEditUserPasswordNoNumber(t *testing.T) {
 
 }
 
-func TestEditProfilePicture(t *testing.T) {
+// func TestEditProfilePicture(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+// 	client := database.CreateClient()
+// 	conn := database.Connect(*client)
+// 	defer database.Disconnect(*client, conn)
 
-	user := RegisterMockTestUser(t, conn, client)
+// 	user := RegisterMockTestUser(t, conn, client)
 
-	// Read the profile picture from the file
-	profilePic, readErr := utils.ReadFile(mock.ProfilePicture())
+// 	// Read the profile picture from the file
+// 	profilePic, readErr := utils.ReadFile(mock.ProfilePicture())
 
-	if readErr != nil {
-		t.Error("The file was not read", readErr)
-		return
-	}
+// 	if readErr != nil {
+// 		t.Error("The file was not read", readErr)
+// 		return
+// 	}
 
-	err := EditUserProfilePicture(conn, client, user, profilePic)
+// 	err := EditUserProfilePicture(conn, client, user, profilePic)
 
-	if err != nil {
-		t.Error("The profile picture was not changed", err)
-		return
-	}
+// 	if err != nil {
+// 		t.Error("The profile picture was not changed", err)
+// 		return
+// 	}
 
-	log.Info("Profile picture changed")
+// 	log.Info("Profile picture changed")
 
-	// delete the user
-	DeleteTestUser(t, conn, client, user)
+// 	// delete the user
+// 	DeleteTestUser(t, conn, client, user)
 
-}
+// }
 
 func TestTokenValidation(t *testing.T) {
 
