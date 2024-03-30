@@ -1,4 +1,4 @@
-package services
+package tests
 
 import (
 	"testing"
@@ -6,6 +6,7 @@ import (
 	"github.com/akrck02/valhalla-api-common/http"
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-dal/mock"
+	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
 	"github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/models"
 )
@@ -85,7 +86,7 @@ func TestGetUserProjects(t *testing.T) {
 	project := CreateMockTestProjectWithUser(t, conn, client, user)
 	project2 := CreateMockTestProjectWithUser(t, conn, client, user)
 
-	projects := GetUserProjects(conn, client, user.Email)
+	projects := projectdal.GetUserProjects(conn, client, user.Email)
 
 	if len(projects) == 0 {
 		t.Errorf("No projects found for user: %v", user.Email)
