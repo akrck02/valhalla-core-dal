@@ -1,4 +1,4 @@
-package services
+package permissiondal
 
 import "github.com/akrck02/valhalla-core-sdk/models"
 
