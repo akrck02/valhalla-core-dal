@@ -5,7 +5,6 @@ go 1.21.8
 require (
 	github.com/akrck02/valhalla-api-common v0.0.1
 	github.com/akrck02/valhalla-core-sdk v0.0.7
-	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/joho/godotenv v1.5.1
 	go.mongodb.org/mongo-driver v1.14.0
 )
