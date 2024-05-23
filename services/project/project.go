@@ -142,7 +142,7 @@ func DeleteProject(conn context.Context, client *mongo.Client, project *models.P
 // [param] project | models.Project : The project to get
 //
 // [return] *models.Error : The error
-func GetProject(conn context.Context, client *mongo.Client, project models.Project) (*models.Project, *models.Error) { // get project from database
+func GetProject(conn context.Context, client *mongo.Client, project *models.Project) (*models.Project, *models.Error) { // get project from database
 
 	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
 
