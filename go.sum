@@ -1,7 +1,7 @@
 github.com/akrck02/valhalla-api-common v0.0.1 h1:NwSTgj9AhHh5vA1faKi+k7GlGGLh+AwnzBGr4EiaPI8=
 github.com/akrck02/valhalla-api-common v0.0.1/go.mod h1:nT+iqwWNm/Q1xG7/aORgKtzRT6rMthaiOYUQf7hLMew=
-github.com/akrck02/valhalla-core-sdk v0.0.7 h1:6poICbaI0AtcUnCj51JmhiNrE12cvDpvq7vC2ROxRSQ=
-github.com/akrck02/valhalla-core-sdk v0.0.7/go.mod h1:x3hf46f4+SfyE6SL4V1KX2Jvf5ERH/9FVrMa1EwM070=
+github.com/akrck02/valhalla-core-sdk v0.0.9-dev h1:Doz/EAjDs/Xut6+WBNrhEx9qbLRy+nSd3JRvMHalF7M=
+github.com/akrck02/valhalla-core-sdk v0.0.9-dev/go.mod h1:x3hf46f4+SfyE6SL4V1KX2Jvf5ERH/9FVrMa1EwM070=
 github.com/bytedance/sonic v1.5.0/go.mod h1:ED5hyg4y6t3/9Ku1R6dU/4KyJ48DZ4jPhfY1O2AihPM=
 github.com/bytedance/sonic v1.9.1 h1:6iJ6NqdoxCDr6mbY8h18oSO+cShGSMRGCEo7F2h0x8s=
 github.com/bytedance/sonic v1.9.1/go.mod h1:i736AoUSYt75HyZLoJW9ERYxcy6eaN6h4BZXU064P/U=
@@ -27,8 +27,6 @@ github.com/go-playground/validator/v10 v10.14.0 h1:vgvQWe3XCz3gIeFDm/HnTIbj6UGmg
 github.com/go-playground/validator/v10 v10.14.0/go.mod h1:9iXMNT7sEkjXb0I+enO7QXmzG6QCsPWY4zveKFVRSyU=
 github.com/goccy/go-json v0.10.2 h1:CrxCmQqYDkv1z7lO7Wbh2HN93uovUHgrECaO5ZrCXAU=
 github.com/goccy/go-json v0.10.2/go.mod h1:6MelG93GURQebXPDq3khkgXZkazVtN9CRI+MGFi0w8I=
-github.com/golang-jwt/jwt v3.2.2+incompatible h1:IfV12K8xAKAnZqdXVzCZ+TOjboZ2keLg81eXfW3O+oY=
-github.com/golang-jwt/jwt v3.2.2+incompatible/go.mod h1:8pz2t5EyA70fFQQSrl6XZXzqecmYZeUEB8OUGHkxJ+I=
 github.com/golang-jwt/jwt/v5 v5.2.1 h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk=
 github.com/golang-jwt/jwt/v5 v5.2.1/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang/protobuf v1.5.0/go.mod h1:FsONVRAS9T7sI+LIUmWTfcYkHO4aIWwzhcaSAoJOfIk=
