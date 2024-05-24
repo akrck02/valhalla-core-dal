@@ -3,11 +3,11 @@ package tests
 import (
 	"testing"
 
-	"github.com/akrck02/valhalla-api-common/http"
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-dal/mock"
 	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
 	"github.com/akrck02/valhalla-core-sdk/error"
+	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/models"
 )
 
