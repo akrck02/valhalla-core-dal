@@ -1,4 +1,4 @@
-package services
+package projectdal
 
 import (
 	"context"
@@ -140,29 +140,24 @@ func DeleteProject(conn context.Context, client *mongo.Client, project *models.P
 // [param] conn | context.Context : The connection context
 // [param] client | *mongo.Client : The mongo client
 // [param] project | models.Project : The project to get
-// [param] found | *models.Project : The project found
 //
 // [return] *models.Error : The error
-func GetProject(conn context.Context, client *mongo.Client, project models.Project, found *models.Project) *models.Error { // get project from database
+func GetProject(conn context.Context, client *mongo.Client, project *models.Project) (*models.Project, *models.Error) { // get project from database
 
 	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
 
+	found := models.Project{}
 	err := projects.FindOne(conn, bson.M{"name": project.Name}).Decode(&found)
 
 	if err != nil {
-		return &models.Error{
+		return nil, &models.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   int(error.PROJECT_NOT_FOUND),
 			Message: "Project not found",
 		}
 	}
 
-	found = &models.Project{
-		Name:        found.Name,
-		Description: found.Description,
-	}
-
-	return nil
+	return &found, nil
 }
 
 // Get all projects by user logic

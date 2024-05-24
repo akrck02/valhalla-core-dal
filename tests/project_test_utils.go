@@ -1,10 +1,11 @@
-package services
+package tests
 
 import (
 	"context"
 	"testing"
 
 	"github.com/akrck02/valhalla-core-dal/mock"
+	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,7 +40,7 @@ func CreateMockTestProjectWithUser(t *testing.T, conn context.Context, client *m
 func CreateTestProjectWithUser(t *testing.T, conn context.Context, client *mongo.Client, project *models.Project, user *models.User) *models.Project {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
-	err := CreateProject(conn, client, project)
+	err := projectdal.CreateProject(conn, client, project)
 
 	if err != nil {
 		t.Errorf("Error creating project: %v", err)
@@ -58,7 +59,7 @@ func CreateTestProjectWithUser(t *testing.T, conn context.Context, client *mongo
 func CreateTestProjectWithError(t *testing.T, conn context.Context, client *mongo.Client, project *models.Project, status int, errorcode int) {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
-	err := CreateProject(conn, client, project)
+	err := projectdal.CreateProject(conn, client, project)
 
 	if err == nil {
 		t.Error("Project created successfully")
@@ -83,7 +84,7 @@ func CreateTestProjectWithError(t *testing.T, conn context.Context, client *mong
 func DeleteTestProject(t *testing.T, conn context.Context, client *mongo.Client, project *models.Project) {
 
 	log.FormattedInfo("Deleting project: ${0}", project.Name)
-	err := DeleteProject(conn, client, project)
+	err := projectdal.DeleteProject(conn, client, project)
 
 	if err != nil {
 		t.Errorf("Error deleting project: %v", err)
