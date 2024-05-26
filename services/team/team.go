@@ -1,8 +1,6 @@
 package teamdal
 
 import (
-	"context"
-
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/http"
@@ -20,12 +18,11 @@ type MemberChangeRequest struct {
 
 // Create team logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] user | *models.Team: team to create
 //
 // [return] error: *models.Error: error if any
-func CreateTeam(conn context.Context, client *mongo.Client, team *models.Team) *models.Error {
+func CreateTeam(client *mongo.Client, team *models.Team) *models.Error {
 
 	// Check if team name is empty
 	if utils.IsEmpty(team.Name) {
@@ -68,7 +65,7 @@ func CreateTeam(conn context.Context, client *mongo.Client, team *models.Team) *
 	}
 
 	// Check if owner exists
-	err1 := userExists(conn, client, team.Owner)
+	err1 := userExists(client, team.Owner)
 
 	if err1 != nil {
 		return err1
@@ -86,7 +83,7 @@ func CreateTeam(conn context.Context, client *mongo.Client, team *models.Team) *
 	// Check if team already exists
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	found := teamExists(conn, coll, team)
+	found := teamExists(coll, team)
 
 	if found.Name != "" {
 		return &models.Error{
@@ -100,7 +97,7 @@ func CreateTeam(conn context.Context, client *mongo.Client, team *models.Team) *
 	team.CreationDate = utils.CurrentDate()
 
 	// Create team
-	_, err2 := coll.InsertOne(conn, team)
+	_, err2 := coll.InsertOne(database.GetDefaultContext(), team)
 
 	if err2 != nil {
 		return &models.Error{
@@ -115,12 +112,11 @@ func CreateTeam(conn context.Context, client *mongo.Client, team *models.Team) *
 
 // Delete team logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] team | *models.Team: team to delete
 //
 // [return] error: *models.Error: error if any
-func DeleteTeam(conn context.Context, client *mongo.Client, team *models.Team) *models.Error {
+func DeleteTeam(client *mongo.Client, team *models.Team) *models.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
@@ -136,7 +132,7 @@ func DeleteTeam(conn context.Context, client *mongo.Client, team *models.Team) *
 
 	// Delete team
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
-	_, err = coll.DeleteOne(conn, bson.M{"_id": objID})
+	_, err = coll.DeleteOne(database.GetDefaultContext(), bson.M{"_id": objID})
 
 	// Check if team was deleted
 	if err != nil {
@@ -152,12 +148,11 @@ func DeleteTeam(conn context.Context, client *mongo.Client, team *models.Team) *
 
 // Edit team logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func EditTeam(conn context.Context, client *mongo.Client, team *models.Team) *models.Error {
+func EditTeam(client *mongo.Client, team *models.Team) *models.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
@@ -173,7 +168,7 @@ func EditTeam(conn context.Context, client *mongo.Client, team *models.Team) *mo
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	_, err = coll.UpdateOne(conn, bson.M{"_id": objID}, bson.M{
+	_, err = coll.UpdateOne(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{
 		"$set": bson.M{
 			"name":        team.Name,
 			"description": team.Description,
@@ -198,12 +193,11 @@ func EditTeam(conn context.Context, client *mongo.Client, team *models.Team) *mo
 
 // Edit team owner logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func EditTeamOwner(conn context.Context, client *mongo.Client, team *models.Team) *models.Error {
+func EditTeamOwner(client *mongo.Client, team *models.Team) *models.Error {
 
 	// Check if team owner is empty
 	if utils.IsEmpty(team.Owner) {
@@ -227,7 +221,7 @@ func EditTeamOwner(conn context.Context, client *mongo.Client, team *models.Team
 	}
 
 	// Check if owner exists
-	err2 := userExists(conn, client, team.Owner)
+	err2 := userExists(client, team.Owner)
 
 	if err2 != nil {
 		return err2
@@ -236,7 +230,7 @@ func EditTeamOwner(conn context.Context, client *mongo.Client, team *models.Team
 	// Update owner
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	result := coll.FindOneAndUpdate(conn, bson.M{"_id": objID}, bson.M{
+	result := coll.FindOneAndUpdate(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{
 		"$set": bson.M{
 			"owner": team.Owner,
 		},
@@ -261,12 +255,11 @@ func EditTeamOwner(conn context.Context, client *mongo.Client, team *models.Team
 
 // Add member to team logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func AddMember(conn context.Context, client *mongo.Client, memberChange *MemberChangeRequest) *models.Error {
+func AddMember(client *mongo.Client, memberChange *MemberChangeRequest) *models.Error {
 
 	// Check if member is empty
 	if utils.IsEmpty(memberChange.User) {
@@ -287,7 +280,7 @@ func AddMember(conn context.Context, client *mongo.Client, memberChange *MemberC
 	}
 
 	// Check if member exists
-	err1 := userExists(conn, client, memberChange.User)
+	err1 := userExists(client, memberChange.User)
 
 	if err1 != nil {
 		return err1
@@ -308,14 +301,14 @@ func AddMember(conn context.Context, client *mongo.Client, memberChange *MemberC
 	// Check if member is already in team or is owner
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	err3 := isUserMemberOrOwner(conn, client, memberChange)
+	err3 := isUserMemberOrOwner(client, memberChange)
 
 	if err3 != nil {
 		return err3
 	}
 
 	// Add member to team
-	_, err4 := coll.UpdateByID(conn, bson.M{"_id": objID}, bson.M{"$push": bson.M{
+	_, err4 := coll.UpdateByID(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{"$push": bson.M{
 		"members": memberChange.User,
 	},
 	})
@@ -333,35 +326,32 @@ func AddMember(conn context.Context, client *mongo.Client, memberChange *MemberC
 
 // Remove member from team logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func RemoveMember(conn context.Context, client *mongo.Client, member *MemberChangeRequest) *models.Error {
+func RemoveMember(client *mongo.Client, member *MemberChangeRequest) *models.Error {
 	return nil
 }
 
 // Get teams logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func GetTeams(conn context.Context, client *mongo.Client, team *models.Team) *models.Error {
+func GetTeams(client *mongo.Client, team *models.Team) *models.Error {
 
 	return nil
 }
 
 // Get team logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func GetTeam(conn context.Context, client *mongo.Client, team *models.Team) (*models.Team, *models.Error) {
+func GetTeam(client *mongo.Client, team *models.Team) (*models.Team, *models.Error) {
 
 	objID, err1 := utils.StringToObjectId(team.ID)
 
@@ -376,7 +366,7 @@ func GetTeam(conn context.Context, client *mongo.Client, team *models.Team) (*mo
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 	var foundTeam models.Team
 
-	err2 := coll.FindOne(conn, bson.M{"_id": objID}).Decode(&foundTeam)
+	err2 := coll.FindOne(database.GetDefaultContext(), bson.M{"_id": objID}).Decode(&foundTeam)
 
 	if err2 != nil {
 		return nil, &models.Error{
@@ -391,12 +381,11 @@ func GetTeam(conn context.Context, client *mongo.Client, team *models.Team) (*mo
 
 // Search teams logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] searchText | *string: text to search
 //
 // [return] error: *models.Error: error if any
-func SearchTeams(conn context.Context, client *mongo.Client, searchText *string) (*[]models.Team, *models.Error) {
+func SearchTeams(client *mongo.Client, searchText *string) (*[]models.Team, *models.Error) {
 
 	foundTeams := []models.Team{}
 
@@ -404,7 +393,7 @@ func SearchTeams(conn context.Context, client *mongo.Client, searchText *string)
 
 }
 
-func userExists(conn context.Context, client *mongo.Client, user string) *models.Error {
+func userExists(client *mongo.Client, user string) *models.Error {
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
 	var foundUser models.User
@@ -419,7 +408,7 @@ func userExists(conn context.Context, client *mongo.Client, user string) *models
 		}
 	}
 
-	err2 := coll.FindOne(conn, bson.M{"_id": objID}).Decode(&foundUser)
+	err2 := coll.FindOne(database.GetDefaultContext(), bson.M{"_id": objID}).Decode(&foundUser)
 
 	if err2 != nil {
 		return &models.Error{
@@ -432,7 +421,7 @@ func userExists(conn context.Context, client *mongo.Client, user string) *models
 	return nil
 }
 
-func teamExists(conn context.Context, coll *mongo.Collection, team *models.Team) models.Team {
+func teamExists(coll *mongo.Collection, team *models.Team) models.Team {
 
 	filter := bson.D{
 		{Key: "name", Value: team.Name},
@@ -440,12 +429,12 @@ func teamExists(conn context.Context, coll *mongo.Collection, team *models.Team)
 	}
 	var result models.Team
 
-	coll.FindOne(conn, filter).Decode(&result)
+	coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	return result
 }
 
-func isUserMemberOrOwner(conn context.Context, client *mongo.Client, request *MemberChangeRequest) *models.Error {
+func isUserMemberOrOwner(client *mongo.Client, request *MemberChangeRequest) *models.Error {
 
 	filterMember := bson.D{
 		{Key: "_id", Value: request.Team},
@@ -461,7 +450,7 @@ func isUserMemberOrOwner(conn context.Context, client *mongo.Client, request *Me
 
 	var result models.Team
 
-	err := coll.FindOne(conn, filterMember).Decode(&result)
+	err := coll.FindOne(database.GetDefaultContext(), filterMember).Decode(&result)
 
 	if err != nil {
 		return &models.Error{
@@ -471,7 +460,7 @@ func isUserMemberOrOwner(conn context.Context, client *mongo.Client, request *Me
 		}
 	}
 
-	err = coll.FindOne(conn, filterOwner).Decode(&result)
+	err = coll.FindOne(database.GetDefaultContext(), filterOwner).Decode(&result)
 
 	if err != nil {
 		return &models.Error{
