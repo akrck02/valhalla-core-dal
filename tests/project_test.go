@@ -13,80 +13,80 @@ import (
 
 func TestCreateProject(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
-	CreateMockTestProjectWithUser(t, conn, client, user)
-	DeleteTestUser(t, conn, client, user)
+	user := RegisterMockTestUser(t, client)
+	CreateMockTestProjectWithUser(t, client, user)
+	DeleteTestUser(t, client, user)
 }
 
 func TestCreateProjectWithoutOwner(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	project := models.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
 	}
 
-	CreateTestProjectWithError(t, conn, client, &project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_OWNER)
+	CreateTestProjectWithError(t, client, &project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_OWNER)
 }
 
 func TestCreateProjectWithoutName(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	project := &models.Project{
 		Description: mock.ProjectDescription(),
 		Owner:       mock.Email(),
 	}
 
-	CreateTestProjectWithError(t, conn, client, project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_NAME)
+	CreateTestProjectWithError(t, client, project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_NAME)
 }
 func TestCreateProjectWithoutDescription(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	project := &models.Project{
 		Name:  mock.ProjectName(),
 		Owner: mock.Email(),
 	}
 
-	CreateTestProjectWithError(t, conn, client, project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_DESCRIPTION)
+	CreateTestProjectWithError(t, client, project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_DESCRIPTION)
 }
 
 func TestCreateProjectThatAlreadyExists(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
-	project := CreateMockTestProjectWithUser(t, conn, client, user)
+	user := RegisterMockTestUser(t, client)
+	project := CreateMockTestProjectWithUser(t, client, user)
 
-	CreateTestProjectWithError(t, conn, client, project, http.HTTP_STATUS_CONFLICT, error.PROJECT_ALREADY_EXISTS)
-	DeleteTestUser(t, conn, client, user)
+	CreateTestProjectWithError(t, client, project, http.HTTP_STATUS_CONFLICT, error.PROJECT_ALREADY_EXISTS)
+	DeleteTestUser(t, client, user)
 }
 
 func TestGetUserProjects(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
-	project := CreateMockTestProjectWithUser(t, conn, client, user)
-	project2 := CreateMockTestProjectWithUser(t, conn, client, user)
+	user := RegisterMockTestUser(t, client)
+	project := CreateMockTestProjectWithUser(t, client, user)
+	project2 := CreateMockTestProjectWithUser(t, client, user)
 
-	projects := projectdal.GetUserProjects(conn, client, user.Email)
+	projects := projectdal.GetUserProjects(client, user.Email)
 
 	if len(projects) == 0 {
 		t.Errorf("No projects found for user: %v", user.Email)
@@ -104,5 +104,5 @@ func TestGetUserProjects(t *testing.T) {
 		t.Errorf("Incorrect project found: %v", projects[1].Name)
 	}
 
-	DeleteTestUser(t, conn, client, user)
+	DeleteTestUser(t, client, user)
 }

@@ -1,8 +1,6 @@
 package userdal
 
 import (
-	"context"
-
 	"github.com/akrck02/valhalla-core-dal/configuration"
 	"github.com/akrck02/valhalla-core-dal/database"
 	devicedal "github.com/akrck02/valhalla-core-dal/services/device"
@@ -25,12 +23,11 @@ type EmailChangeRequest struct {
 
 // Register user logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] user | *models.User: user to register
 //
 // [return] *models.Error: error if any
-func Register(conn context.Context, client *mongo.Client, user *models.User) *models.Error {
+func Register(client *mongo.Client, user *models.User) *models.Error {
 
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
@@ -77,7 +74,7 @@ func Register(conn context.Context, client *mongo.Client, user *models.User) *mo
 	}
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
-	found := mailExists(user.Email, conn, coll)
+	found := mailExists(user.Email, coll)
 
 	if found != nil {
 
@@ -103,7 +100,7 @@ func Register(conn context.Context, client *mongo.Client, user *models.User) *mo
 	userToInsert.ValidationCode = code
 
 	// register user on database
-	_, err = coll.InsertOne(conn, userToInsert)
+	_, err = coll.InsertOne(database.GetDefaultContext(), userToInsert)
 
 	if err != nil {
 		return &models.Error{
@@ -118,18 +115,17 @@ func Register(conn context.Context, client *mongo.Client, user *models.User) *mo
 
 // Login user logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to login
 // [param] ip | string: ip address of the user
 // [param] address | string: user agent of the user
 //
 // [return] string: auth token --> *models.Error: error if any
-func Login(conn context.Context, client *mongo.Client, user *models.User, ip string, address string) (string, *models.Error) {
+func Login(client *mongo.Client, user *models.User, ip string, address string) (string, *models.Error) {
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
 	log.Info("Password: " + user.Password)
-	found := authorizationOk(user.Email, user.Clone().Password, conn, coll)
+	found := authorizationOk(user.Email, user.Clone().Password, coll)
 
 	if found == nil {
 		return "", &models.Error{
@@ -140,7 +136,7 @@ func Login(conn context.Context, client *mongo.Client, user *models.User, ip str
 	}
 
 	device := &models.Device{Address: ip, UserAgent: address}
-	token, err := devicedal.AddUserDevice(conn, client, found, device)
+	token, err := devicedal.AddUserDevice(client, found, device)
 
 	if err != nil {
 		return "", &models.Error{
@@ -155,12 +151,11 @@ func Login(conn context.Context, client *mongo.Client, user *models.User, ip str
 
 // Login auth logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] auth | models.AuthLogin: auth to login
-func LoginAuth(conn context.Context, client *mongo.Client, auth *models.AuthLogin, ip string, userAgent string) *models.Error {
+func LoginAuth(client *mongo.Client, auth *models.AuthLogin, ip string, userAgent string) *models.Error {
 
-	found, err := GetUser(conn, client, &models.User{Email: auth.Email}, false)
+	found, err := GetUser(client, &models.User{Email: auth.Email}, false)
 
 	if err != nil {
 		return err
@@ -175,7 +170,7 @@ func LoginAuth(conn context.Context, client *mongo.Client, auth *models.AuthLogi
 	}
 
 	var devices = client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	device, deviceFindingError := devicedal.FindDeviceByAuthToken(conn, devices, &filter)
+	device, deviceFindingError := devicedal.FindDeviceByAuthToken(devices, &filter)
 
 	if deviceFindingError != nil || device == nil {
 		return &models.Error{
@@ -191,12 +186,11 @@ func LoginAuth(conn context.Context, client *mongo.Client, auth *models.AuthLogi
 
 // Edit user logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to edit
 //
 // [return] *models.Error: error if any
-func EditUser(conn context.Context, client *mongo.Client, user *models.User) *models.Error {
+func EditUser(client *mongo.Client, user *models.User) *models.Error {
 
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
 
@@ -245,7 +239,7 @@ func EditUser(conn context.Context, client *mongo.Client, user *models.User) *mo
 	}
 
 	// update user on database
-	res, err := users.UpdateOne(conn, bson.M{"email": user.Email}, toUpdate)
+	res, err := users.UpdateOne(database.GetDefaultContext(), bson.M{"email": user.Email}, toUpdate)
 
 	if err != nil {
 		return &models.Error{
@@ -268,12 +262,11 @@ func EditUser(conn context.Context, client *mongo.Client, user *models.User) *mo
 
 // Change email logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to change email
 //
 // [return] *models.Error: error if any
-func EditUserEmail(conn context.Context, client *mongo.Client, mail *EmailChangeRequest) *models.Error {
+func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error {
 
 	if utils.IsEmpty(mail.Email) || utils.IsEmpty(mail.NewEmail) {
 		return &models.Error{
@@ -304,7 +297,7 @@ func EditUserEmail(conn context.Context, client *mongo.Client, mail *EmailChange
 
 	// Check if user exists
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
-	found := mailExists(mail.NewEmail, conn, users)
+	found := mailExists(mail.NewEmail, users)
 
 	if found != nil {
 		return &models.Error{
@@ -325,7 +318,7 @@ func EditUserEmail(conn context.Context, client *mongo.Client, mail *EmailChange
 
 	}
 
-	updateStatus, err := users.UpdateOne(conn, bson.M{"email": mail.Email}, bson.M{"$set": bson.M{"email": mail.NewEmail}})
+	updateStatus, err := users.UpdateOne(database.GetDefaultContext(), bson.M{"email": mail.Email}, bson.M{"$set": bson.M{"email": mail.NewEmail}})
 
 	if err != nil {
 		return &models.Error{
@@ -354,7 +347,7 @@ func EditUserEmail(conn context.Context, client *mongo.Client, mail *EmailChange
 	// update user devices on database
 	devices := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
 
-	updateStatus, err = devices.UpdateMany(conn, bson.M{"user": mail.Email}, bson.M{"$set": bson.M{"user": mail.NewEmail}})
+	updateStatus, err = devices.UpdateMany(database.GetDefaultContext(), bson.M{"user": mail.Email}, bson.M{"$set": bson.M{"user": mail.NewEmail}})
 
 	if err != nil {
 		return &models.Error{
@@ -377,13 +370,12 @@ func EditUserEmail(conn context.Context, client *mongo.Client, mail *EmailChange
 
 // Change profile picture logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to change email
 // [param] picture | []byte: picture to change
 //
 // [return] *models.Error: error if any
-func EditUserProfilePicture(conn context.Context, client *mongo.Client, user *models.User, picture []byte) *models.Error {
+func EditUserProfilePicture(client *mongo.Client, user *models.User, picture []byte) *models.Error {
 
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
@@ -420,7 +412,7 @@ func EditUserProfilePicture(conn context.Context, client *mongo.Client, user *mo
 	}
 
 	user.ProfilePic = profilePicPath
-	editErr := EditUser(conn, client, user)
+	editErr := EditUser(client, user)
 
 	if editErr != nil {
 		return &models.Error{
@@ -435,12 +427,11 @@ func EditUserProfilePicture(conn context.Context, client *mongo.Client, user *mo
 
 // Delete user logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to delete
 //
 // [return] *models.Error: error if any
-func DeleteUser(conn context.Context, client *mongo.Client, user *models.User) *models.Error {
+func DeleteUser(client *mongo.Client, user *models.User) *models.Error {
 
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
@@ -452,7 +443,7 @@ func DeleteUser(conn context.Context, client *mongo.Client, user *models.User) *
 
 	// delete user projects
 	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
-	_, err := projects.DeleteMany(conn, bson.M{"owner": user.Email})
+	_, err := projects.DeleteMany(database.GetDefaultContext(), bson.M{"owner": user.Email})
 
 	if err != nil {
 		return &models.Error{
@@ -464,7 +455,7 @@ func DeleteUser(conn context.Context, client *mongo.Client, user *models.User) *
 
 	// delete user devices
 	devices := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	_, err = devices.DeleteMany(conn, bson.M{"user": user.Email})
+	_, err = devices.DeleteMany(database.GetDefaultContext(), bson.M{"user": user.Email})
 
 	if err != nil {
 		return &models.Error{
@@ -478,7 +469,7 @@ func DeleteUser(conn context.Context, client *mongo.Client, user *models.User) *
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
 
 	var deleteResult *mongo.DeleteResult
-	deleteResult, err = users.DeleteOne(conn, bson.M{"email": user.Email})
+	deleteResult, err = users.DeleteOne(database.GetDefaultContext(), bson.M{"email": user.Email})
 
 	if err != nil {
 		return &models.Error{
@@ -500,11 +491,11 @@ func DeleteUser(conn context.Context, client *mongo.Client, user *models.User) *
 }
 
 // Get user logic
-func GetUser(conn context.Context, client *mongo.Client, user *models.User, secure bool) (*models.User, *models.Error) { // get user from database
+func GetUser(client *mongo.Client, user *models.User, secure bool) (*models.User, *models.Error) { // get user from database
 
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
 	var found models.User
-	err := users.FindOne(conn, bson.M{"email": user.Email}).Decode(&found)
+	err := users.FindOne(database.GetDefaultContext(), bson.M{"email": user.Email}).Decode(&found)
 
 	if err != nil {
 		return nil, &models.Error{
@@ -523,12 +514,11 @@ func GetUser(conn context.Context, client *mongo.Client, user *models.User, secu
 
 // Validate user logic
 //
-// [param] conn | context.Context: connection to the database
 // [param] client | *mongo.Client: client to the database
 // [param] code | string: code to validate
 //
 // [return] *models.Error: error if any
-func ValidateUser(conn context.Context, client *mongo.Client, code string) *models.Error {
+func ValidateUser(client *mongo.Client, code string) *models.Error {
 
 	if utils.IsEmpty(code) {
 		return &models.Error{
@@ -542,7 +532,7 @@ func ValidateUser(conn context.Context, client *mongo.Client, code string) *mode
 		ValidationCode: code,
 	}
 	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
-	err := coll.FindOne(conn, user).Decode(user)
+	err := coll.FindOne(database.GetDefaultContext(), user).Decode(user)
 
 	log.FormattedInfo("user: ${0}", user.Email)
 	log.FormattedInfo("code: ${0}", code)
@@ -575,7 +565,7 @@ func ValidateUser(conn context.Context, client *mongo.Client, code string) *mode
 	user.Validated = true
 
 	// update user on database
-	result, editerr := coll.UpdateOne(conn, bson.M{"email": user.Email}, bson.M{"$set": bson.M{"validation_code": "", "validated": true}})
+	result, editerr := coll.UpdateOne(database.GetDefaultContext(), bson.M{"email": user.Email}, bson.M{"$set": bson.M{"validation_code": "", "validated": true}})
 
 	if result.MatchedCount == 0 {
 		return &models.Error{
@@ -599,15 +589,14 @@ func ValidateUser(conn context.Context, client *mongo.Client, code string) *mode
 // Check email on database
 //
 //	[param] email | string The email to check
-//	[param] conn | context.Context The connection to the database
 //
 //	[return] model.User : The user found or empty
-func mailExists(email string, conn context.Context, coll *mongo.Collection) *models.User {
+func mailExists(email string, coll *mongo.Collection) *models.User {
 
 	filter := bson.D{{Key: "email", Value: email}}
 
 	var result models.User
-	err := coll.FindOne(conn, filter).Decode(&result)
+	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	if err != nil {
 		log.FormattedError("Error: ${0}", err.Error())
@@ -621,10 +610,10 @@ func mailExists(email string, conn context.Context, coll *mongo.Collection) *mod
 //
 //	[param] username | string : The username to check
 //	[param] password | string : The password to check
-//	[param] conn | context.Context : The connection to the database
+//	[param] coll | *mongo.Collection : The collection to check
 //
 //	[return] model.User : The user found or empty
-func authorizationOk(email string, password string, conn context.Context, coll *mongo.Collection) *models.User {
+func authorizationOk(email string, password string, coll *mongo.Collection) *models.User {
 
 	filter := bson.D{
 		{Key: "email", Value: email},
@@ -632,7 +621,7 @@ func authorizationOk(email string, password string, conn context.Context, coll *
 	}
 
 	var result models.User
-	err := coll.FindOne(conn, filter).Decode(&result)
+	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	if err != nil {
 		log.FormattedError("Error: ${0}", err.Error())
@@ -644,16 +633,15 @@ func authorizationOk(email string, password string, conn context.Context, coll *
 
 // Get user from token
 //
-//	[param] conn | context.Context : The connection to the database
 //	[param] client | *mongo.Client : The client to the database
 //	[param] token | *string : The token to check
 //	[param] tokenUser | *models.User : The user found or empty --> *models.Error: error if any
-func getUserFromToken(conn context.Context, client *mongo.Client, token string) (models.User, *models.Error) {
+func getUserFromToken(client *mongo.Client, token string) (models.User, *models.Error) {
 
 	var tokenDevice models.Device
 
 	devices := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	err := devices.FindOne(conn, bson.M{"token": token}).Decode(&tokenDevice)
+	err := devices.FindOne(database.GetDefaultContext(), bson.M{"token": token}).Decode(&tokenDevice)
 
 	if err != nil {
 		return models.User{}, &models.Error{
@@ -666,7 +654,7 @@ func getUserFromToken(conn context.Context, client *mongo.Client, token string) 
 	var tokenUser models.User
 
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
-	err = users.FindOne(conn, bson.M{"email": tokenDevice.User}).Decode(&tokenUser)
+	err = users.FindOne(database.GetDefaultContext(), bson.M{"email": tokenDevice.User}).Decode(&tokenUser)
 
 	if err != nil {
 		return models.User{}, &models.Error{
@@ -704,7 +692,7 @@ func IsTokenValid(client *mongo.Client, token string) (*models.User, *models.Err
 
 	email := claims.Claims.(jwt.MapClaims)["email"].(string)
 
-	foundUser, tokenUserErr := getUserFromToken(context.Background(), client, token)
+	foundUser, tokenUserErr := getUserFromToken(client, token)
 
 	if tokenUserErr != nil {
 		return nil, &models.Error{

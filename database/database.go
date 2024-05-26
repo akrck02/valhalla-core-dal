@@ -31,51 +31,49 @@ var CurrentDatabase = "valhalla"
 func CreateClient() *mongo.Client {
 
 	var host = configuration.Params.Mongo
+	clientOptions := options.Client().ApplyURI(MONGO_URL + MONGO_USER + ":" + MONGO_PASSWORD + "@" + host + ":" + MONGO_PORT)
+	client, err := mongo.Connect(context.Background(), clientOptions)
 
-	client, err := mongo.NewClient(options.Client().ApplyURI(MONGO_URL + MONGO_USER + ":" + MONGO_PASSWORD + "@" + host + ":" + MONGO_PORT))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
 	return client
 }
 
-func Connect(client mongo.Client) context.Context {
+func Connect() *mongo.Client {
 
-	ctx := context.Background() //context.WithTimeout(context.Background(), 10*time.Second)
-	err := client.Connect(ctx)
-
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
+	client := CreateClient()
 	log.FormattedInfo("Database (${0}) connected on mongodb [${1}:${2}]", CurrentDatabase, configuration.Params.Mongo, MONGO_PORT)
-	return ctx
+	return client
+
 }
 
 func SetupTest() {
 
 	CurrentDatabase = TEST_DATABASE_NAME
-	var client = CreateClient()
-	var ctx = Connect(*client)
+	var client = Connect()
 
 	log.Info("Dropping database " + CurrentDatabase)
-	err := client.Database(CurrentDatabase).Drop(ctx)
+	err := client.Database(CurrentDatabase).Drop(context.Background())
 	if err != nil {
 		log.FormattedError("Error dropping database ${0} : ${1}", CurrentDatabase, err.Error())
 	}
 
-	defer Disconnect(*client, ctx)
+	defer Disconnect(*client)
 }
 
-func Disconnect(client mongo.Client, ctx context.Context) {
-	defer client.Disconnect(ctx)
+func Disconnect(client mongo.Client) {
+	defer client.Disconnect(context.Background())
 }
 
 func Setup() {
 
 	var client = CreateClient()
-	var ctx = Connect(*client)
+	defer Disconnect(*client)
 
-	defer Disconnect(*client, ctx)
+}
 
+func GetDefaultContext() context.Context {
+	return context.Background()
 }
