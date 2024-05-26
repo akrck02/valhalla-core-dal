@@ -3,9 +3,11 @@ package devicedal
 import (
 	"github.com/akrck02/valhalla-core-dal/configuration"
 	"github.com/akrck02/valhalla-core-dal/database"
+	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
 	"github.com/akrck02/valhalla-core-sdk/utils"
+	"github.com/akrck02/valhalla-core-sdk/valerror"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,46 +16,53 @@ import (
 // AddUserDevice adds a new device to the database
 // or updates the token if the device already exists
 //
-// [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user that owns the device
 // [param] device | models.Device: device to add
 //
-// [return] string: token of the device --> error : The error that occurred
-func AddUserDevice(client *mongo.Client, user *models.User, device *models.Device) (string, error) {
+// [return] device: the device with new token --> error : The error that occurred
+func AddUserDevice(user *models.User, device *models.Device) (*models.Device, *models.Error) {
 
 	token, err := utils.GenerateAuthToken(user, device, configuration.Params.Secret)
 
 	if err != nil {
-		return "", err
+		return nil, &models.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.DATABASE_ERROR,
+			Message: "Error generating token",
+		}
 	}
 
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
+
 	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	device.Token = token
 	device.User = user.Email
 
 	found, err := FindDevice(coll, device)
-
-	if err != nil && err != mongo.ErrNoDocuments {
-		return "", err
-	}
 
 	if found != nil {
 
 		log.Debug("Device already exists, updating token")
 		coll.ReplaceOne(database.GetDefaultContext(), found, device)
 
-		return token, nil
+		return device, nil
 	}
 
+	device.Token = token
 	log.Debug("Creating new device...")
 
-	_, err = coll.InsertOne(database.GetDefaultContext(), device)
+	_, insertErr := coll.InsertOne(database.GetDefaultContext(), device)
 
-	if err != nil {
-		return "", err
+	if insertErr != nil {
+		return device, &models.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.DATABASE_ERROR,
+			Message: "Error creating device",
+		}
 	}
 
-	return token, nil
+	return device, nil
 }
 
 // FindDevice finds a device in the database
@@ -62,7 +71,7 @@ func AddUserDevice(client *mongo.Client, user *models.User, device *models.Devic
 // [param] device | models.Device: device to find
 //
 // [return] models.Device: device found --> error : The error that occurred
-func FindDevice(coll *mongo.Collection, device *models.Device) (*models.Device, error) {
+func FindDevice(coll *mongo.Collection, device *models.Device) (*models.Device, *models.Error) {
 
 	var found models.Device
 	err := coll.FindOne(
@@ -71,7 +80,11 @@ func FindDevice(coll *mongo.Collection, device *models.Device) (*models.Device, 
 	).Decode(&found)
 
 	if err != nil {
-		return nil, err
+		return nil, &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.DEVICE_DOES_NOT_EXIST,
+			Message: "Device doesn't exists",
+		}
 	}
 
 	return &found, nil
@@ -79,11 +92,10 @@ func FindDevice(coll *mongo.Collection, device *models.Device) (*models.Device, 
 
 // FindDeviceByAuthToken finds a device in the database by its token, user, address and user agent
 //
-// [param] client | *mongo.Client: client to the database
 // [param] token | string: token of the device
 //
 // [return] models.Device: device found --> error : The error that occurred
-func FindDeviceByAuthToken(coll *mongo.Collection, device *models.Device) (*models.Device, error) {
+func FindDeviceByAuthToken(coll *mongo.Collection, device *models.Device) (*models.Device, *models.Error) {
 
 	var found models.Device
 	err := coll.FindOne(
@@ -92,7 +104,11 @@ func FindDeviceByAuthToken(coll *mongo.Collection, device *models.Device) (*mode
 	).Decode(&found)
 
 	if err != nil {
-		return nil, err
+		return nil, &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.DEVICE_DOES_NOT_EXIST,
+			Message: "Device doesn't exists",
+		}
 	}
 
 	return &found, nil
@@ -101,15 +117,67 @@ func FindDeviceByAuthToken(coll *mongo.Collection, device *models.Device) (*mode
 
 // DeleteDevice removes a device from the database
 //
-// [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user that owns the device
 // [param] device | models.Device: device to remove
 //
-// [return] *mongo.DeleteResult: result of the operation --> error : The error that occurred
-func DeleteDevice(client *mongo.Client, device *models.Device) error {
+// [return] error: The error that occurred
+func DeleteDevice(device *models.Device) *models.Error {
 
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
+
+	//check if device exists
+	existsErr := DeviceExists(device)
+	if existsErr != nil {
+		return existsErr
+	}
+
+	// delete device
 	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	_, err := coll.DeleteOne(database.GetDefaultContext(), bson.M{"user": device.User, "address": device.Address, "useragent": device.UserAgent})
 
-	return err
+	if err != nil {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.DATABASE_ERROR,
+			Message: "Error deleting device",
+		}
+	}
+
+	return nil
+}
+
+// DeviceExists checks if a device exists in the database
+//
+// [param] device | models.Device: device to check
+//
+// [return] error: The error that occurred
+func DeviceExists(device *models.Device) *models.Error {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
+
+	// check if device exists
+	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
+	obtained, err := FindDevice(coll, device)
+
+	if err != nil {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.DEVICE_DOES_NOT_EXIST,
+			Message: "Device doesn't exist",
+		}
+	}
+
+	if obtained == nil {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.DEVICE_DOES_NOT_EXIST,
+			Message: "Device doesn't exist",
+		}
+	}
+
+	return nil
 }

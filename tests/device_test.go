@@ -1,138 +1,52 @@
 package tests
 
 import (
-	"log"
 	"testing"
 
-	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-dal/mock"
 	devicedal "github.com/akrck02/valhalla-core-dal/services/device"
-	userdal "github.com/akrck02/valhalla-core-dal/services/user"
 	"github.com/akrck02/valhalla-core-sdk/models"
 )
 
 func TestDeviceExists(t *testing.T) {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
-
-	// Create user
-	user := models.User{
-		Email:    mock.Email(),
-		Username: mock.Username(),
-		Password: mock.Password(),
-	}
-
-	err := userdal.Register(client, &user)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	// add device to user
-	var expected = models.Device{
-		Token:     mock.Token(),
-		User:      user.Email,
-		Address:   mock.Ip(),
-		UserAgent: mock.Platform(),
-	}
-
-	_, error := devicedal.AddUserDevice(client, &user, &expected)
-
-	if error != nil {
-		t.Error(err)
-	}
+	// Create a new user
+	user := RegisterMockTestUser(t)
+	device := AddMockDeviceToUser(t, user)
 
 	// check if device exists
-	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	obtained, error := devicedal.FindDevice(coll, &expected)
-
-	if error != nil {
-		t.Error(err)
-	}
-
-	if obtained == nil {
+	err := devicedal.DeviceExists(device)
+	if err != nil {
 		t.Error("Device not found")
 	}
 
-	log.Print("Device expected: ", expected)
-	log.Print("Device found: ", obtained)
-
 	// delete device
-	error = devicedal.DeleteDevice(client, &expected)
-
-	if error != nil {
+	err = devicedal.DeleteDevice(device)
+	if err != nil {
 		t.Error(err)
 	}
 
 	// delete user
-	err = userdal.DeleteUser(client, &user)
-
-	if err != nil {
-		t.Error(err)
-	}
+	DeleteTestUser(t, user)
 
 }
 
 func TestDeviceNotExists(t *testing.T) {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
-
-	// Create user
-	user := models.User{
-		Email:    mock.Email(),
-		Username: mock.Username(),
-		Password: mock.Password(),
-	}
-
-	err := userdal.Register(client, &user)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	// add device to user
-	var expected = models.Device{
+	user := RegisterMockTestUser(t)
+	device := &models.Device{
 		Token:     mock.Token(),
 		User:      user.Email,
 		Address:   mock.Ip(),
 		UserAgent: mock.Platform(),
 	}
-
-	_, error := devicedal.AddUserDevice(client, &user, &expected)
-
-	if error != nil {
-		t.Error(err)
-	}
-
 	// check if device exists
-	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	obtained, error := devicedal.FindDevice(coll, &models.Device{
-		Token: mock.Token(),
-	})
+	err := devicedal.DeviceExists(device)
 
-	if error == nil || obtained != nil {
+	if err == nil {
 		t.Error("Device found")
 	}
 
-	log.Print("Device expected: ", expected)
-	log.Print("Device not found: ", obtained)
-
-	// delete device
-	error = devicedal.DeleteDevice(client, &expected)
-
-	if error != nil {
-		t.Error(err)
-	}
-
 	// delete user
-	err = userdal.DeleteUser(client, &user)
-
-	if err != nil {
-		t.Error(err)
-	}
-
+	DeleteTestUser(t, user)
 }
