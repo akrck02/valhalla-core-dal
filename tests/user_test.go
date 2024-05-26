@@ -15,61 +15,61 @@ import (
 
 func TestRegister(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
-	DeleteTestUser(t, conn, client, user)
+	user := RegisterMockTestUser(t, client)
+	DeleteTestUser(t, client, user)
 }
 
 func TestRegisterNotEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Password: mock.Password(),
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_EMAIL)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_EMAIL)
 }
 
 func TestRegisterNotUsername(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.Email(),
 		Password: mock.Password(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_USERNAME)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_USERNAME)
 }
 
 func TestRegisterNotPassword(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.Email(),
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PASSWORD)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PASSWORD)
 }
 
 func TestRegisterNotDotEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.EmailNotDot(),
@@ -77,14 +77,14 @@ func TestRegisterNotDotEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_DOT_EMAIL)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_DOT_EMAIL)
 }
 
 func TestRegisterNotAtEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.EmailNotAt(),
@@ -92,14 +92,14 @@ func TestRegisterNotAtEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_AT_EMAIL)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_AT_EMAIL)
 }
 
 func TestRegisterShortMail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.EmailShort(),
@@ -107,14 +107,14 @@ func TestRegisterShortMail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.SHORT_EMAIL)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.SHORT_EMAIL)
 }
 
 func TestRegisterNotSpecialCharactersPassword(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.Email(),
@@ -122,14 +122,14 @@ func TestRegisterNotSpecialCharactersPassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_SPECIAL_CHARACTERS_PASSWORD)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_SPECIAL_CHARACTERS_PASSWORD)
 }
 
 func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.Email(),
@@ -137,7 +137,7 @@ func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_UPPER_LOWER_PASSWORD)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_UPPER_LOWER_PASSWORD)
 
 	user = &models.User{
 		Email:    mock.Email(),
@@ -145,14 +145,14 @@ func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_UPPER_LOWER_PASSWORD)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_UPPER_LOWER_PASSWORD)
 }
 
 func TestRegisterShortPassword(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.Email(),
@@ -160,14 +160,14 @@ func TestRegisterShortPassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.SHORT_PASSWORD)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.SHORT_PASSWORD)
 }
 
 func TestRegisterNotNumbersPassword(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.Email(),
@@ -175,97 +175,97 @@ func TestRegisterNotNumbersPassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_ALPHANUMERIC_PASSWORD)
+	RegisterTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_ALPHANUMERIC_PASSWORD)
 }
 
 func TestLogin(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
-	LoginTestUser(t, conn, client, user, mock.Ip(), mock.Platform())
-	DeleteTestUser(t, conn, client, user)
+	user := RegisterMockTestUser(t, client)
+	LoginTestUser(t, client, user, mock.Ip(), mock.Platform())
+	DeleteTestUser(t, client, user)
 
 }
 
 func TestLoginWrongPassword(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
+	user := RegisterMockTestUser(t, client)
 	user.Password = mock.PasswordShort()
 
 	log.Info("Login with wrong password")
 	log.FormattedInfo("Password: ${0}", user.Password)
 
 	// login the user
-	LoginTestUserWithError(t, conn, client, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, error.USER_NOT_AUTHORIZED)
-	DeleteTestUser(t, conn, client, user)
+	LoginTestUserWithError(t, client, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, error.USER_NOT_AUTHORIZED)
+	DeleteTestUser(t, client, user)
 }
 
 func TestLoginWrongEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
+	user := RegisterMockTestUser(t, client)
 	realEmail := user.Email
 	user.Email = "wrong" + mock.Email()
-	LoginTestUserWithError(t, conn, client, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, error.USER_NOT_AUTHORIZED)
+	LoginTestUserWithError(t, client, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, error.USER_NOT_AUTHORIZED)
 
 	user.Email = realEmail
-	userdal.DeleteUser(conn, client, user)
+	userdal.DeleteUser(client, user)
 }
 
 func TestLoginAuth(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
-	token := LoginTestUser(t, conn, client, user, mock.Ip(), mock.Platform())
-	LoginAuthTestUser(t, conn, client, user.Email, token)
-	DeleteTestUser(t, conn, client, user)
+	user := RegisterMockTestUser(t, client)
+	token := LoginTestUser(t, client, user, mock.Ip(), mock.Platform())
+	LoginAuthTestUser(t, client, user.Email, token)
+	DeleteTestUser(t, client, user)
 
 }
 
 func TestDeleteUser(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
-	LoginTestUser(t, conn, client, user, mock.Ip(), mock.Platform())
-	DeleteTestUser(t, conn, client, user)
+	user := RegisterMockTestUser(t, client)
+	LoginTestUser(t, client, user, mock.Ip(), mock.Platform())
+	DeleteTestUser(t, client, user)
 
 }
 
 func TestDeleteUserNoEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Password: mock.Password(),
 		Username: mock.Username(),
 	}
 
-	DeleteTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_EMAIL)
+	DeleteTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_EMAIL)
 }
 
 func TestDeleteUserNotFound(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.Email(),
@@ -273,14 +273,14 @@ func TestDeleteUserNotFound(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	DeleteTestUserWithError(t, conn, client, user, http.HTTP_STATUS_NOT_FOUND, error.USER_NOT_FOUND)
+	DeleteTestUserWithError(t, client, user, http.HTTP_STATUS_NOT_FOUND, error.USER_NOT_FOUND)
 }
 
 func TestEditUserEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	email := mock.Email()
 	newEmail := "xXx" + mock.Email()
@@ -291,8 +291,8 @@ func TestEditUserEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUser(t, conn, client, user)
-	LoginTestUser(t, conn, client, user, mock.Ip(), mock.Platform())
+	RegisterTestUser(t, client, user)
+	LoginTestUser(t, client, user, mock.Ip(), mock.Platform())
 
 	// Change the user email
 	log.Info("Changing user email")
@@ -301,29 +301,29 @@ func TestEditUserEmail(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmail(t, conn, client, &emailChangeRequest)
+	EditTestUserEmail(t, client, &emailChangeRequest)
 	user.Email = newEmail
 
 	// delete the user
-	DeleteTestUser(t, conn, client, user)
+	DeleteTestUser(t, client, user)
 }
 
 func TestEditUserEmailNoEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	emailChangeRequest := userdal.EmailChangeRequest{}
-	EditTestUserEmailWithError(t, conn, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_EMAIL)
+	EditTestUserEmailWithError(t, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_EMAIL)
 
 }
 
 func TestEditUserEmailNoDotEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	email := mock.Email()
 	newEmail := mock.EmailNotDot()
@@ -333,15 +333,15 @@ func TestEditUserEmailNoDotEmail(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(t, conn, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.NO_DOT_EMAIL)
+	EditTestUserEmailWithError(t, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.NO_DOT_EMAIL)
 
 }
 
 func TestEditUserEmailNoAtEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	email := mock.Email()
 	newEmail := mock.EmailNotAt()
@@ -351,15 +351,15 @@ func TestEditUserEmailNoAtEmail(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(t, conn, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.NO_AT_EMAIL)
+	EditTestUserEmailWithError(t, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.NO_AT_EMAIL)
 
 }
 
 func TestEditUserEmailShortEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	email := mock.Email()
 	newEmail := mock.EmailShort()
@@ -369,15 +369,15 @@ func TestEditUserEmailShortEmail(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(t, conn, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.SHORT_EMAIL)
+	EditTestUserEmailWithError(t, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.SHORT_EMAIL)
 
 }
 
 func TestEditUserEmailNotFound(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	email := mock.Email()
 	newEmail := "xXx" + mock.Email()
@@ -387,14 +387,14 @@ func TestEditUserEmailNotFound(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(t, conn, client, &emailChangeRequest, http.HTTP_STATUS_NOT_FOUND, error.USER_NOT_FOUND)
+	EditTestUserEmailWithError(t, client, &emailChangeRequest, http.HTTP_STATUS_NOT_FOUND, error.USER_NOT_FOUND)
 }
 
 func TestEditUserEmailExists(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	email := mock.Email()
 	newEmail := mock.Email() + "xXx"
@@ -406,7 +406,7 @@ func TestEditUserEmailExists(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUser(t, conn, client, user)
+	RegisterTestUser(t, client, user)
 	log.Jump()
 
 	// Create a new user with the new email
@@ -416,7 +416,7 @@ func TestEditUserEmailExists(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUser(t, conn, client, newUser)
+	RegisterTestUser(t, client, newUser)
 	log.Jump()
 
 	// Change the email
@@ -425,19 +425,19 @@ func TestEditUserEmailExists(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(t, conn, client, &emailChangeRequest, http.HTTP_STATUS_CONFLICT, error.USER_ALREADY_EXISTS)
+	EditTestUserEmailWithError(t, client, &emailChangeRequest, http.HTTP_STATUS_CONFLICT, error.USER_ALREADY_EXISTS)
 	log.Jump()
 
 	// Delete the users
-	DeleteTestUser(t, conn, client, user)
-	DeleteTestUser(t, conn, client, newUser)
+	DeleteTestUser(t, client, user)
+	DeleteTestUser(t, client, newUser)
 }
 
 func TestEditUserSameEmail(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	email := mock.Email()
 	emailChangeRequest := userdal.EmailChangeRequest{
@@ -445,33 +445,33 @@ func TestEditUserSameEmail(t *testing.T) {
 		NewEmail: email,
 	}
 
-	EditTestUserEmailWithError(t, conn, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.EMAILS_EQUAL)
+	EditTestUserEmailWithError(t, client, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, error.EMAILS_EQUAL)
 }
 
 func TestEditUserPassword(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
+	user := RegisterMockTestUser(t, client)
 
 	// change the user password
 	user.Password = mock.Password() + "xXx"
-	EditTestUser(t, conn, client, user)
+	EditTestUser(t, client, user)
 
 	// check if the user can login with the new password
-	LoginTestUser(t, conn, client, user, mock.Ip(), mock.Platform())
+	LoginTestUser(t, client, user, mock.Ip(), mock.Platform())
 
 	// delete the user
-	DeleteTestUser(t, conn, client, user)
+	DeleteTestUser(t, client, user)
 }
 
 func TestEditUserPasswordUserNotFound(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	user := &models.User{
 		Email:    mock.Email(),
@@ -479,82 +479,82 @@ func TestEditUserPasswordUserNotFound(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	EditTestUserWithError(t, conn, client, user, http.HTTP_STATUS_NOT_FOUND, error.USER_NOT_FOUND)
+	EditTestUserWithError(t, client, user, http.HTTP_STATUS_NOT_FOUND, error.USER_NOT_FOUND)
 }
 
 func TestEditUserPasswordShort(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
+	user := RegisterMockTestUser(t, client)
 
 	// change the user password
 	user.Password = mock.PasswordShort()
-	EditTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.SHORT_PASSWORD)
+	EditTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.SHORT_PASSWORD)
 
 	// delete the user
-	DeleteTestUser(t, conn, client, user)
+	DeleteTestUser(t, client, user)
 }
 
 func TestEditUserPasswordNoLowercase(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
+	user := RegisterMockTestUser(t, client)
 
 	// change the user password
 	user.Password = mock.PasswordNotLowerCase()
-	EditTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_UPPER_LOWER_PASSWORD)
+	EditTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_UPPER_LOWER_PASSWORD)
 
 	// delete the user
-	DeleteTestUser(t, conn, client, user)
+	DeleteTestUser(t, client, user)
 }
 
 func TestEditUserPasswordNoUppercase(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
+	user := RegisterMockTestUser(t, client)
 
 	// change the user password
 	user.Password = mock.PasswordNotUpperCase()
-	EditTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_UPPER_LOWER_PASSWORD)
+	EditTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_UPPER_LOWER_PASSWORD)
 
 	// delete the user
-	DeleteTestUser(t, conn, client, user)
+	DeleteTestUser(t, client, user)
 
 }
 
 func TestEditUserPasswordNoNumber(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
+	user := RegisterMockTestUser(t, client)
 
 	// change the user password
 	user.Password = mock.PasswordNotNumber()
-	EditTestUserWithError(t, conn, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_ALPHANUMERIC_PASSWORD)
+	EditTestUserWithError(t, client, user, http.HTTP_STATUS_BAD_REQUEST, error.NO_ALPHANUMERIC_PASSWORD)
 
 	// delete the user
-	DeleteTestUser(t, conn, client, user)
+	DeleteTestUser(t, client, user)
 
 }
 
 // func TestEditProfilePicture(t *testing.T) {
 
-// 	client := database.CreateClient()
-// 	conn := database.Connect(*client)
-// 	defer database.Disconnect(*client, conn)
+// // Connect database
+// var client = database.Connect()
+// defer database.Disconnect(*client)
 
-// 	user := RegisterMockTestUser(t, conn, client)
+// 	user := RegisterMockTestUser(t, client)
 
 // 	// Read the profile picture from the file
 // 	profilePic, readErr := utils.ReadFile(mock.ProfilePicture())
@@ -564,7 +564,7 @@ func TestEditUserPasswordNoNumber(t *testing.T) {
 // 		return
 // 	}
 
-// 	err := EditUserProfilePicture(conn, client, user, profilePic)
+// 	err := EditUserProfilePicture(client, user, profilePic)
 
 // 	if err != nil {
 // 		t.Error("The profile picture was not changed", err)
@@ -574,65 +574,65 @@ func TestEditUserPasswordNoNumber(t *testing.T) {
 // 	log.Info("Profile picture changed")
 
 // 	// delete the user
-// 	DeleteTestUser(t, conn, client, user)
+// 	DeleteTestUser(t, client, user)
 
 // }
 
 func TestTokenValidation(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
-	user := RegisterMockTestUser(t, conn, client)
-	LoginTestUser(t, conn, client, user, mock.Ip(), mock.Platform())
-	DeleteTestUser(t, conn, client, user)
+	user := RegisterMockTestUser(t, client)
+	LoginTestUser(t, client, user, mock.Ip(), mock.Platform())
+	DeleteTestUser(t, client, user)
 }
 
 func TestTokenValidationInvalidToken(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	// Create a fake token
-	ValidateTestTokenWithError(t, conn, client, mock.Token(), http.HTTP_STATUS_FORBIDDEN, error.INVALID_TOKEN)
+	ValidateTestTokenWithError(t, client, mock.Token(), http.HTTP_STATUS_FORBIDDEN, error.INVALID_TOKEN)
 
 }
 
 func TestTokenValidationInvalidTokenFormat(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	// Create a fake token
 	token := mock.Username()
-	ValidateTestTokenWithError(t, conn, client, token, http.HTTP_STATUS_FORBIDDEN, error.INVALID_TOKEN)
+	ValidateTestTokenWithError(t, client, token, http.HTTP_STATUS_FORBIDDEN, error.INVALID_TOKEN)
 
 }
 
 func TestTokenValidationEmptyToken(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	// Create a fake token
-	ValidateTestTokenWithError(t, conn, client, "", http.HTTP_STATUS_FORBIDDEN, error.INVALID_TOKEN)
+	ValidateTestTokenWithError(t, client, "", http.HTTP_STATUS_FORBIDDEN, error.INVALID_TOKEN)
 }
 
 func TestValidationCode(t *testing.T) {
 
-	client := database.CreateClient()
-	conn := database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	// Create a new user
-	user := RegisterMockTestUser(t, conn, client)
+	user := RegisterMockTestUser(t, client)
 
 	// get the user
-	user, err := userdal.GetUser(conn, client, user, true)
+	user, err := userdal.GetUser(client, user, true)
 
 	if err != nil {
 		t.Error("The user was not found", err)
@@ -640,7 +640,7 @@ func TestValidationCode(t *testing.T) {
 	}
 
 	// validate the user
-	err = userdal.ValidateUser(conn, client, user.ValidationCode)
+	err = userdal.ValidateUser(client, user.ValidationCode)
 
 	if err != nil {
 		t.Error("The user was not validated", err)
@@ -648,6 +648,6 @@ func TestValidationCode(t *testing.T) {
 	}
 
 	// delete the user
-	DeleteTestUser(t, conn, client, user)
+	DeleteTestUser(t, client, user)
 
 }

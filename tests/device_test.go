@@ -14,9 +14,8 @@ import (
 func TestDeviceExists(t *testing.T) {
 
 	// Connect database
-	var client = database.CreateClient()
-	var conn = database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	// Create user
 	user := models.User{
@@ -25,7 +24,7 @@ func TestDeviceExists(t *testing.T) {
 		Password: mock.Password(),
 	}
 
-	err := userdal.Register(conn, client, &user)
+	err := userdal.Register(client, &user)
 
 	if err != nil {
 		t.Error(err)
@@ -39,7 +38,7 @@ func TestDeviceExists(t *testing.T) {
 		UserAgent: mock.Platform(),
 	}
 
-	_, error := devicedal.AddUserDevice(conn, client, &user, &expected)
+	_, error := devicedal.AddUserDevice(client, &user, &expected)
 
 	if error != nil {
 		t.Error(err)
@@ -47,7 +46,7 @@ func TestDeviceExists(t *testing.T) {
 
 	// check if device exists
 	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	obtained, error := devicedal.FindDevice(conn, coll, &expected)
+	obtained, error := devicedal.FindDevice(coll, &expected)
 
 	if error != nil {
 		t.Error(err)
@@ -61,14 +60,14 @@ func TestDeviceExists(t *testing.T) {
 	log.Print("Device found: ", obtained)
 
 	// delete device
-	error = devicedal.DeleteDevice(conn, client, &expected)
+	error = devicedal.DeleteDevice(client, &expected)
 
 	if error != nil {
 		t.Error(err)
 	}
 
 	// delete user
-	err = userdal.DeleteUser(conn, client, &user)
+	err = userdal.DeleteUser(client, &user)
 
 	if err != nil {
 		t.Error(err)
@@ -79,9 +78,8 @@ func TestDeviceExists(t *testing.T) {
 func TestDeviceNotExists(t *testing.T) {
 
 	// Connect database
-	var client = database.CreateClient()
-	var conn = database.Connect(*client)
-	defer database.Disconnect(*client, conn)
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	// Create user
 	user := models.User{
@@ -90,7 +88,7 @@ func TestDeviceNotExists(t *testing.T) {
 		Password: mock.Password(),
 	}
 
-	err := userdal.Register(conn, client, &user)
+	err := userdal.Register(client, &user)
 
 	if err != nil {
 		t.Error(err)
@@ -104,7 +102,7 @@ func TestDeviceNotExists(t *testing.T) {
 		UserAgent: mock.Platform(),
 	}
 
-	_, error := devicedal.AddUserDevice(conn, client, &user, &expected)
+	_, error := devicedal.AddUserDevice(client, &user, &expected)
 
 	if error != nil {
 		t.Error(err)
@@ -112,7 +110,7 @@ func TestDeviceNotExists(t *testing.T) {
 
 	// check if device exists
 	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	obtained, error := devicedal.FindDevice(conn, coll, &models.Device{
+	obtained, error := devicedal.FindDevice(coll, &models.Device{
 		Token: mock.Token(),
 	})
 
@@ -124,14 +122,14 @@ func TestDeviceNotExists(t *testing.T) {
 	log.Print("Device not found: ", obtained)
 
 	// delete device
-	error = devicedal.DeleteDevice(conn, client, &expected)
+	error = devicedal.DeleteDevice(client, &expected)
 
 	if error != nil {
 		t.Error(err)
 	}
 
 	// delete user
-	err = userdal.DeleteUser(conn, client, &user)
+	err = userdal.DeleteUser(client, &user)
 
 	if err != nil {
 		t.Error(err)
