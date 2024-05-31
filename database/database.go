@@ -8,13 +8,10 @@ import (
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 const MONGO_URL = "mongodb://"
-const MONGO_USER = "admin"
-const MONGO_PASSWORD = "p4ssw0rd"
-const MONGO_PORT = "27017"
-
 const TEST_DATABASE_NAME = "valhalla-test"
 
 const USER = "user"
@@ -30,8 +27,10 @@ var CurrentDatabase = "valhalla"
 
 func CreateClient() *mongo.Client {
 
-	var host = configuration.Params.Mongo
-	clientOptions := options.Client().ApplyURI(MONGO_URL + MONGO_USER + ":" + MONGO_PASSWORD + "@" + host + ":" + MONGO_PORT)
+	uri := MONGO_URL + configuration.Params.User + ":" + configuration.Params.Password + "@" + configuration.Params.Mongo + ":" + configuration.Params.MongoPort
+	log.Info(uri)
+	clientOptions := options.Client().ApplyURI(uri)
+
 	client, err := mongo.Connect(context.Background(), clientOptions)
 
 	if err != nil {
@@ -44,7 +43,7 @@ func CreateClient() *mongo.Client {
 func Connect() *mongo.Client {
 
 	client := CreateClient()
-	log.FormattedInfo("Database (${0}) connected on mongodb [${1}:${2}]", CurrentDatabase, configuration.Params.Mongo, MONGO_PORT)
+	log.FormattedInfo("Database (${0}) connected on mongodb [${1}:${2}]", CurrentDatabase, configuration.Params.Mongo, configuration.Params.MongoPort)
 	return client
 
 }
@@ -68,10 +67,14 @@ func Disconnect(client mongo.Client) {
 }
 
 func Setup() {
-
 	var client = CreateClient()
-	defer Disconnect(*client)
+	err := client.Ping(GetDefaultContext(), &readpref.ReadPref{})
 
+	if err != nil {
+		log.Error("cannot connect to database")
+	}
+
+	defer Disconnect(*client)
 }
 
 func GetDefaultContext() context.Context {

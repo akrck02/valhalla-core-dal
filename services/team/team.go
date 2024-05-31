@@ -350,26 +350,45 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 
 // Get teams logic
 //
-// [param] team | *models.User: user
+// [param] user | *models.User: user
 //
 // [return] error: *models.Error: error if any
-func GetTeams(team *models.User) *models.Error {
-
+func GetTeams(user *models.User) ([]*models.Team, *models.Error) {
 
 	// Connect database
 	var client = database.Connect()
 	defer database.Disconnect(*client)
 
-
 	// Get the teams that the user owns
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
-	//coll.Find(database.GetDefaultContext(),bson.M{"owner" : user.id})
+	teamsCursor, err := coll.Find(database.GetDefaultContext(), bson.M{"owner": user.ID})
 
+	if err != nil {
+		return nil, &models.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.UNEXPECTED_ERROR,
+			Message: "Cannot find teams",
+		}
+	}
 
-	// TODO: get the teams the user is member of 
+	var teams []*models.Team
 
+	for teamsCursor.Next(database.GetDefaultContext()) {
+		var team models.Team
+		err := teamsCursor.Decode(&team)
+		if err != nil {
+			return nil, &models.Error{
+				Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+				Error:   valerror.UNEXPECTED_ERROR,
+				Message: "Cannot find teams",
+			}
+		}
+		teams = append(teams, &team)
+	}
 
-	return nil
+	// TODO: get the teams the user is member of
+
+	return teams, nil
 }
 
 // Get team logic
