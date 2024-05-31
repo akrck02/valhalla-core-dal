@@ -350,10 +350,24 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 
 // Get teams logic
 //
-// [param] team | *models.Team: team to edit
+// [param] team | *models.User: user
 //
 // [return] error: *models.Error: error if any
-func GetTeams(team *models.Team) *models.Error {
+func GetTeams(team *models.User) *models.Error {
+
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
+
+
+	// Get the teams that the user owns
+	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	//coll.Find(database.GetDefaultContext(),bson.M{"owner" : user.id})
+
+
+	// TODO: get the teams the user is member of 
+
 
 	return nil
 }
