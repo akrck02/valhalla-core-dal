@@ -270,14 +270,14 @@ func EditTeamOwner(team *models.Team) *models.Error {
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func AddMember(memberChange *MemberChangeRequest) *models.Error {
+func AddMember(member *MemberChangeRequest) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
 	defer database.Disconnect(*client)
 
 	// Check if member is empty
-	if utils.IsEmpty(memberChange.User) {
+	if utils.IsEmpty(member.User) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.NO_MEMBER,
@@ -286,7 +286,7 @@ func AddMember(memberChange *MemberChangeRequest) *models.Error {
 	}
 
 	// Check if team is empty
-	if utils.IsEmpty(memberChange.Team) {
+	if utils.IsEmpty(member.Team) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.NO_TEAM,
@@ -295,44 +295,66 @@ func AddMember(memberChange *MemberChangeRequest) *models.Error {
 	}
 
 	// Check if member exists
-	err1 := userExists(memberChange.User)
+	err := userExists(member.User)
 
-	if err1 != nil {
-		return err1
+	if err != nil {
+		return err
 	}
 
 	// Transform team id to object id
 	// also check if team id is valid
-	objID, err2 := utils.StringToObjectId(memberChange.Team)
+	objID, parseErr := utils.StringToObjectId(member.Team)
 
-	if err2 != nil {
+	if parseErr != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.BAD_OBJECT_ID,
-			Message: "Bad object id",
+			Message: "Invalid object id",
 		}
 	}
 
 	// Check if member is already in team or is owner
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	err3 := isUserMemberOrOwner(memberChange)
+	err = isUserMemberOrOwner(member)
+	if err != nil {
+		return err
+	}
 
-	if err3 != nil {
-		return err3
+	// Get if member is already in team
+	filter := bson.D{
+		{Key: "_id", Value: objID},
+		{Key: "members", Value: bson.D{{Key: "$all", Value: bson.A{member.User}}}},
+	}
+
+	var found models.Team
+	findErr := coll.FindOne(database.GetDefaultContext(), filter).Decode(&found)
+
+	if findErr == nil {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.USER_ALREADY_MEMBER,
+			Message: "User is already a member of the team",
+		}
 	}
 
 	// Add member to team
-	_, err4 := coll.UpdateByID(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{"$push": bson.M{
-		"members": memberChange.User,
-	},
-	})
+	result, parseErr := coll.UpdateByID(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{"$push": bson.M{"members": member.User}})
 
-	if err4 != nil {
+	if parseErr != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not add member",
+		}
+	}
+
+	// Check if member was added
+	if result.MatchedCount == 0 {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_NO_CHANGE,
+			Error:   valerror.TEAM_NOT_FOUND,
+			Message: "Team member not added",
 		}
 	}
 
@@ -345,6 +367,56 @@ func AddMember(memberChange *MemberChangeRequest) *models.Error {
 //
 // [return] error: *models.Error: error if any
 func RemoveMember(member *MemberChangeRequest) *models.Error {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
+
+	// Check if member is empty
+	if utils.IsEmpty(member.User) {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.NO_MEMBER,
+			Message: "Adding a member requires a member",
+		}
+	}
+
+	// Check if team is empty
+	if utils.IsEmpty(member.Team) {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.NO_TEAM,
+			Message: "Adding a member requires a team",
+		}
+	}
+
+	// Transform team id to object id
+	// also check if team id is valid
+	objID, parseErr := utils.StringToObjectId(member.Team)
+
+	if parseErr != nil {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.BAD_OBJECT_ID,
+			Message: "Invalid object id",
+		}
+	}
+
+	// Check if member exists
+	err := userExists(member.User)
+
+	if err != nil {
+		return err
+	}
+
+	// Check if member is already in team or is owner
+	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+
+	err = isUserMemberOrOwner(member)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -527,4 +599,40 @@ func isUserMemberOrOwner(request *MemberChangeRequest) *models.Error {
 	}
 
 	return nil
+}
+
+func isMember(request *MemberChangeRequest) bool {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
+
+	filter := bson.D{
+		{Key: "_id", Value: request.Team},
+		{Key: "members", Value: bson.D{{Key: "$all", Value: bson.A{request.User}}}},
+	}
+
+	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+
+	var result models.Team
+	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
+	return err != nil
+}
+
+func isOwner(request *MemberChangeRequest) bool {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
+
+	filter := bson.D{
+		{Key: "_id", Value: request.Team},
+		{Key: "owner", Value: request.User},
+	}
+
+	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+
+	var result models.Team
+	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
+	return err != nil
 }
