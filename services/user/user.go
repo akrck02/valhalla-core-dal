@@ -35,7 +35,7 @@ func Register(user *models.User) *models.Error {
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_EMAIL,
+			Error:   valerror.EMPTY_USER_EMAIL,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -43,7 +43,7 @@ func Register(user *models.User) *models.Error {
 	if utils.IsEmpty(user.Password) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_PASSWORD,
+			Error:   valerror.EMPTY_USER_PASSWORD,
 			Message: "Password cannot be empty",
 		}
 	}
@@ -113,6 +113,19 @@ func Register(user *models.User) *models.Error {
 		}
 	}
 
+	// get user from database
+	var userFound models.User
+	findErr := coll.FindOne(database.GetDefaultContext(), bson.M{"email": user.Email}).Decode(&userFound)
+
+	if findErr != nil {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.USER_NOT_FOUND,
+			Message: "User not found",
+		}
+	}
+
+	user.ID = userFound.ID
 	return nil
 }
 
@@ -286,7 +299,7 @@ func EditUserEmail(mail *EmailChangeRequest) *models.Error {
 	if utils.IsEmpty(mail.Email) || utils.IsEmpty(mail.NewEmail) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_EMAIL,
+			Error:   valerror.EMPTY_USER_EMAIL,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -295,7 +308,7 @@ func EditUserEmail(mail *EmailChangeRequest) *models.Error {
 	if mail.Email == mail.NewEmail {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMAILS_EQUAL,
+			Error:   valerror.USER_EDITING_EMAILS_EQUAL,
 			Message: "The new email is the same as the old one",
 		}
 	}
@@ -398,7 +411,7 @@ func EditUserProfilePicture(user *models.User, picture []byte) *models.Error {
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_EMAIL,
+			Error:   valerror.EMPTY_USER_EMAIL,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -457,7 +470,7 @@ func DeleteUser(user *models.User) *models.Error {
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_EMAIL,
+			Error:   valerror.EMPTY_USER_EMAIL,
 			Message: "Email cannot be empty",
 		}
 	}

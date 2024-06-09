@@ -25,7 +25,7 @@ func TestRegisterNotEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_EMAIL)
+	RegisterTestUserWithError(t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USER_EMAIL)
 }
 
 func TestRegisterNotUsername(t *testing.T) {
@@ -45,7 +45,7 @@ func TestRegisterNotPassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_PASSWORD)
+	RegisterTestUserWithError(t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USER_PASSWORD)
 }
 
 func TestRegisterNotDotEmail(t *testing.T) {
@@ -189,7 +189,7 @@ func TestDeleteUserNoEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	DeleteTestUserWithError(t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_EMAIL)
+	DeleteTestUserWithError(t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USER_EMAIL)
 }
 
 func TestDeleteUserNotFound(t *testing.T) {
@@ -234,7 +234,7 @@ func TestEditUserEmail(t *testing.T) {
 func TestEditUserEmailNoEmail(t *testing.T) {
 
 	emailChangeRequest := userdal.EmailChangeRequest{}
-	EditTestUserEmailWithError(t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_EMAIL)
+	EditTestUserEmailWithError(t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USER_EMAIL)
 
 }
 
@@ -340,7 +340,7 @@ func TestEditUserSameEmail(t *testing.T) {
 		NewEmail: email,
 	}
 
-	EditTestUserEmailWithError(t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.EMAILS_EQUAL)
+	EditTestUserEmailWithError(t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.USER_EDITING_EMAILS_EQUAL)
 }
 
 func TestEditUserPassword(t *testing.T) {
