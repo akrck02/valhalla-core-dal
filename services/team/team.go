@@ -131,8 +131,8 @@ func DeleteTeam(team *models.Team) *models.Error {
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.BAD_OBJECT_ID,
-			Message: "Bad object id",
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid object id",
 		}
 	}
 
@@ -170,8 +170,8 @@ func EditTeam(team *models.Team) *models.Error {
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.BAD_OBJECT_ID,
-			Message: "Bad object id",
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid object id",
 		}
 	}
 
@@ -227,8 +227,8 @@ func EditTeamOwner(team *models.Team) *models.Error {
 	if err1 != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.BAD_OBJECT_ID,
-			Message: "Bad object id",
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid object id",
 		}
 	}
 
@@ -280,7 +280,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	if utils.IsEmpty(member.User) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.NO_MEMBER,
+			Error:   valerror.MEMBER_PARAMETER_EMPTY,
 			Message: "Adding a member requires a member",
 		}
 	}
@@ -289,7 +289,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	if utils.IsEmpty(member.Team) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.NO_TEAM,
+			Error:   valerror.TEAM_PARAMETER_EMPTY,
 			Message: "Adding a member requires a team",
 		}
 	}
@@ -308,7 +308,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	if parseErr != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.BAD_OBJECT_ID,
+			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
 		}
 	}
@@ -316,9 +316,12 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	// Check if member is already in team or is owner
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	err = isUserMemberOrOwner(member)
-	if err != nil {
-		return err
+	if isUserMemberOrOwner(member) {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.USER_ALREADY_MEMBER,
+			Message: "User is already a member of the team",
+		}
 	}
 
 	// Get if member is already in team
@@ -376,7 +379,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 	if utils.IsEmpty(member.User) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.NO_MEMBER,
+			Error:   valerror.MEMBER_PARAMETER_EMPTY,
 			Message: "Adding a member requires a member",
 		}
 	}
@@ -385,7 +388,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 	if utils.IsEmpty(member.Team) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.NO_TEAM,
+			Error:   valerror.TEAM_PARAMETER_EMPTY,
 			Message: "Adding a member requires a team",
 		}
 	}
@@ -397,7 +400,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 	if parseErr != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.BAD_OBJECT_ID,
+			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
 		}
 	}
@@ -409,12 +412,41 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 		return err
 	}
 
-	// Check if member is already in team or is owner
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	// deleting team owner is not allowed
+	if isOwner(member) {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.CANNOT_DELETE_TEAM_OWNER,
+			Message: "User is owner of the team",
+		}
+	}
 
-	err = isUserMemberOrOwner(member)
-	if err != nil {
-		return err
+	// Check if member is in team
+	if !isMember(member) {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.USER_NOT_MEMBER_OF_THE_TEAM,
+			Message: "User is not a member of the team",
+		}
+	}
+
+	// Remove member from team
+	result, parseErr := client.Database(database.CurrentDatabase).Collection(database.TEAM).UpdateByID(database.GetDefaultContext(), objID, bson.M{"$pull": bson.M{"members": member.User}})
+	if parseErr != nil {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.UPDATE_ERROR,
+			Message: "Could not remove member",
+		}
+	}
+
+	// Check if member was removed
+	if result.MatchedCount == 0 {
+		return &models.Error{
+			Status:  http.HTTP_STATUS_NO_CHANGE,
+			Error:   valerror.TEAM_NOT_FOUND,
+			Message: "Team member not removed",
+		}
 	}
 
 	return nil
@@ -479,8 +511,8 @@ func GetTeam(team *models.Team) (*models.Team, *models.Error) {
 	if err1 != nil {
 		return nil, &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.BAD_OBJECT_ID,
-			Message: "Bad object id",
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid object id",
 		}
 	}
 
@@ -527,8 +559,8 @@ func userExists(user string) *models.Error {
 	if err1 != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.BAD_OBJECT_ID,
-			Message: "Bad object id",
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid object id",
 		}
 	}
 
@@ -558,7 +590,7 @@ func teamExists(coll *mongo.Collection, team *models.Team) models.Team {
 	return result
 }
 
-func isUserMemberOrOwner(request *MemberChangeRequest) *models.Error {
+func isUserMemberOrOwner(request *MemberChangeRequest) bool {
 
 	// Connect database
 	var client = database.Connect()
@@ -581,24 +613,16 @@ func isUserMemberOrOwner(request *MemberChangeRequest) *models.Error {
 	err := coll.FindOne(database.GetDefaultContext(), filterMember).Decode(&result)
 
 	if err != nil {
-		return &models.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.USER_ALREADY_MEMBER,
-			Message: "User is already a member of the team",
-		}
+		return true
 	}
 
 	err = coll.FindOne(database.GetDefaultContext(), filterOwner).Decode(&result)
 
 	if err != nil {
-		return &models.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.USER_IS_OWNER,
-			Message: "User is owner of the team",
-		}
+		return true
 	}
 
-	return nil
+	return false
 }
 
 func isMember(request *MemberChangeRequest) bool {
