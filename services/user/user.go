@@ -13,6 +13,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -103,7 +104,7 @@ func Register(user *models.User) *models.Error {
 	userToInsert.ValidationCode = code
 
 	// register user on database
-	_, errInsert := coll.InsertOne(database.GetDefaultContext(), userToInsert)
+	res, errInsert := coll.InsertOne(database.GetDefaultContext(), userToInsert)
 
 	if errInsert != nil {
 		return &models.Error{
@@ -114,18 +115,7 @@ func Register(user *models.User) *models.Error {
 	}
 
 	// get user from database
-	var userFound models.User
-	findErr := coll.FindOne(database.GetDefaultContext(), bson.M{"email": user.Email}).Decode(&userFound)
-
-	if findErr != nil {
-		return &models.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_FOUND,
-			Message: "User not found",
-		}
-	}
-
-	user.ID = userFound.ID
+	user.ID = res.InsertedID.(primitive.ObjectID).Hex()
 	return nil
 }
 

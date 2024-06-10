@@ -1,21 +1,9 @@
 package mock
 
-import "math/rand"
-
-func randomString(length int) string {
-
-	str := ""
-	for i := 0; i < length; i++ {
-		str += string(rune(97 + rand.Intn(26)))
-	}
-
-	return str
-}
-
 func Email() string {
 
 	//Return a random character string
-	return randomString(10) + "@valhalla.org"
+	return RandomString(10) + "@valhalla.org"
 }
 
 func EmailNotDot() string {
@@ -56,5 +44,5 @@ func PasswordNotSpecialChar() string {
 }
 
 func Username() string {
-	return randomString(10)
+	return RandomString(10)
 }

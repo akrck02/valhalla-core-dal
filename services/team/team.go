@@ -8,6 +8,7 @@ import (
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -100,7 +101,7 @@ func CreateTeam(team *models.Team) *models.Error {
 	team.CreationDate = utils.CurrentDate()
 
 	// Create team
-	_, err2 := coll.InsertOne(database.GetDefaultContext(), team)
+	res, err2 := coll.InsertOne(database.GetDefaultContext(), team)
 
 	if err2 != nil {
 		return &models.Error{
@@ -110,6 +111,7 @@ func CreateTeam(team *models.Team) *models.Error {
 		}
 	}
 
+	team.ID = res.InsertedID.(primitive.ObjectID).Hex()
 	return nil
 }
 
@@ -324,24 +326,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 		}
 	}
 
-	// Get if member is already in team
-	filter := bson.D{
-		{Key: "_id", Value: objID},
-		{Key: "members", Value: bson.D{{Key: "$all", Value: bson.A{member.User}}}},
-	}
-
-	var found models.Team
-	findErr := coll.FindOne(database.GetDefaultContext(), filter).Decode(&found)
-
-	if findErr == nil {
-		return &models.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.USER_ALREADY_MEMBER,
-			Message: "User is already a member of the team",
-		}
-	}
-
-	// Add member to team
+	// Add member to team FIXME: Not working
 	result, parseErr := coll.UpdateByID(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{"$push": bson.M{"members": member.User}})
 
 	if parseErr != nil {
@@ -612,13 +597,13 @@ func isUserMemberOrOwner(request *MemberChangeRequest) bool {
 
 	err := coll.FindOne(database.GetDefaultContext(), filterMember).Decode(&result)
 
-	if err != nil {
+	if err == nil && result.ID != "" {
 		return true
 	}
 
 	err = coll.FindOne(database.GetDefaultContext(), filterOwner).Decode(&result)
 
-	if err != nil {
+	if err == nil && result.ID != "" {
 		return true
 	}
 
