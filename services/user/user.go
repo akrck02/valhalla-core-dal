@@ -4,11 +4,11 @@ import (
 	"github.com/akrck02/valhalla-core-dal/configuration"
 	"github.com/akrck02/valhalla-core-dal/database"
 	devicedal "github.com/akrck02/valhalla-core-dal/services/device"
-	"github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
 	"github.com/akrck02/valhalla-core-sdk/utils"
+	"github.com/akrck02/valhalla-core-sdk/valerror"
 
 	"github.com/golang-jwt/jwt/v5"
 
@@ -23,16 +23,19 @@ type EmailChangeRequest struct {
 
 // Register user logic
 //
-// [param] client | *mongo.Client: client to the database
 // [param] user | *models.User: user to register
 //
 // [return] *models.Error: error if any
-func Register(client *mongo.Client, user *models.User) *models.Error {
+func Register(user *models.User) *models.Error {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.EMPTY_EMAIL,
+			Error:   valerror.EMPTY_EMAIL,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -40,7 +43,7 @@ func Register(client *mongo.Client, user *models.User) *models.Error {
 	if utils.IsEmpty(user.Password) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.EMPTY_PASSWORD,
+			Error:   valerror.EMPTY_PASSWORD,
 			Message: "Password cannot be empty",
 		}
 	}
@@ -48,7 +51,7 @@ func Register(client *mongo.Client, user *models.User) *models.Error {
 	if utils.IsEmpty(user.Username) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.EMPTY_USERNAME,
+			Error:   valerror.EMPTY_USERNAME,
 			Message: "Username cannot be empty",
 		}
 	}
@@ -68,7 +71,7 @@ func Register(client *mongo.Client, user *models.User) *models.Error {
 	if checkedPass.Response != 200 {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   int(checkedPass.Response),
+			Error:   checkedPass.Response,
 			Message: checkedPass.Message,
 		}
 	}
@@ -80,7 +83,7 @@ func Register(client *mongo.Client, user *models.User) *models.Error {
 
 		return &models.Error{
 			Status:  http.HTTP_STATUS_CONFLICT,
-			Error:   error.USER_ALREADY_EXISTS,
+			Error:   valerror.USER_ALREADY_EXISTS,
 			Message: "User already exists",
 		}
 	}
@@ -90,7 +93,7 @@ func Register(client *mongo.Client, user *models.User) *models.Error {
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.CANNOT_CREATE_VALIDATION_CODE,
+			Error:   valerror.CANNOT_CREATE_VALIDATION_CODE,
 			Message: "User not created",
 		}
 	}
@@ -100,12 +103,12 @@ func Register(client *mongo.Client, user *models.User) *models.Error {
 	userToInsert.ValidationCode = code
 
 	// register user on database
-	_, err = coll.InsertOne(database.GetDefaultContext(), userToInsert)
+	_, errInsert := coll.InsertOne(database.GetDefaultContext(), userToInsert)
 
-	if err != nil {
+	if errInsert != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_CONFLICT,
-			Error:   error.USER_ALREADY_EXISTS,
+			Error:   valerror.USER_ALREADY_EXISTS,
 			Message: "User already exists",
 		}
 	}
@@ -115,13 +118,16 @@ func Register(client *mongo.Client, user *models.User) *models.Error {
 
 // Login user logic
 //
-// [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to login
 // [param] ip | string: ip address of the user
 // [param] address | string: user agent of the user
 //
 // [return] string: auth token --> *models.Error: error if any
-func Login(client *mongo.Client, user *models.User, ip string, address string) (string, *models.Error) {
+func Login(user *models.User, ip string, address string) (string, *models.Error) {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
 	log.Info("Password: " + user.Password)
@@ -130,32 +136,35 @@ func Login(client *mongo.Client, user *models.User, ip string, address string) (
 	if found == nil {
 		return "", &models.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   error.USER_NOT_AUTHORIZED,
+			Error:   valerror.USER_NOT_AUTHORIZED,
 			Message: "Invalid credentials",
 		}
 	}
 
 	device := &models.Device{Address: ip, UserAgent: address}
-	token, err := devicedal.AddUserDevice(client, found, device)
+	device, err := devicedal.AddUserDevice(found, device)
 
 	if err != nil {
 		return "", &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.UNEXPECTED_ERROR,
+			Error:   valerror.UNEXPECTED_ERROR,
 			Message: "Cannot generate your auth token",
 		}
 	}
 
-	return token, nil
+	return device.Token, nil
 }
 
 // Login auth logic
 //
-// [param] client | *mongo.Client: client to the database
 // [param] auth | models.AuthLogin: auth to login
-func LoginAuth(client *mongo.Client, auth *models.AuthLogin, ip string, userAgent string) *models.Error {
+func LoginAuth(auth *models.AuthLogin, ip string, userAgent string) *models.Error {
 
-	found, err := GetUser(client, &models.User{Email: auth.Email}, false)
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
+
+	found, err := GetUser(&models.User{Email: auth.Email}, false)
 
 	if err != nil {
 		return err
@@ -175,7 +184,7 @@ func LoginAuth(client *mongo.Client, auth *models.AuthLogin, ip string, userAgen
 	if deviceFindingError != nil || device == nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   error.USER_NOT_AUTHORIZED,
+			Error:   valerror.USER_NOT_AUTHORIZED,
 			Message: "No possible login devices",
 		}
 	}
@@ -186,11 +195,14 @@ func LoginAuth(client *mongo.Client, auth *models.AuthLogin, ip string, userAgen
 
 // Edit user logic
 //
-// [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to edit
 //
 // [return] *models.Error: error if any
-func EditUser(client *mongo.Client, user *models.User) *models.Error {
+func EditUser(user *models.User) *models.Error {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
 
@@ -201,7 +213,7 @@ func EditUser(client *mongo.Client, user *models.User) *models.Error {
 		if checkedPass.Response != 200 {
 			return &models.Error{
 				Status:  http.HTTP_STATUS_BAD_REQUEST,
-				Error:   int(checkedPass.Response),
+				Error:   checkedPass.Response,
 				Message: checkedPass.Message,
 			}
 		}
@@ -215,7 +227,7 @@ func EditUser(client *mongo.Client, user *models.User) *models.Error {
 		if checkedPass.Response != 200 {
 			return &models.Error{
 				Status:  http.HTTP_STATUS_BAD_REQUEST,
-				Error:   int(checkedPass.Response),
+				Error:   checkedPass.Response,
 				Message: checkedPass.Message,
 			}
 		}
@@ -244,7 +256,7 @@ func EditUser(client *mongo.Client, user *models.User) *models.Error {
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_UPDATED,
+			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated",
 		}
 	}
@@ -252,7 +264,7 @@ func EditUser(client *mongo.Client, user *models.User) *models.Error {
 	if res.MatchedCount == 0 && res.ModifiedCount == 0 {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   error.USER_NOT_FOUND,
+			Error:   valerror.USER_NOT_FOUND,
 			Message: "Users not found",
 		}
 	}
@@ -262,16 +274,19 @@ func EditUser(client *mongo.Client, user *models.User) *models.Error {
 
 // Change email logic
 //
-// [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to change email
 //
 // [return] *models.Error: error if any
-func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error {
+func EditUserEmail(mail *EmailChangeRequest) *models.Error {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(mail.Email) || utils.IsEmpty(mail.NewEmail) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.EMPTY_EMAIL,
+			Error:   valerror.EMPTY_EMAIL,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -280,7 +295,7 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 	if mail.Email == mail.NewEmail {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.EMAILS_EQUAL,
+			Error:   valerror.EMAILS_EQUAL,
 			Message: "The new email is the same as the old one",
 		}
 	}
@@ -290,7 +305,7 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 	if checkedPass.Response != 200 {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   int(checkedPass.Response),
+			Error:   checkedPass.Response,
 			Message: checkedPass.Message,
 		}
 	}
@@ -302,7 +317,7 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 	if found != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_CONFLICT,
-			Error:   error.USER_ALREADY_EXISTS,
+			Error:   valerror.USER_ALREADY_EXISTS,
 			Message: "That email is already in use",
 		}
 	}
@@ -323,7 +338,7 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_UPDATED,
+			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated" + err.Error(),
 		}
 	}
@@ -331,7 +346,7 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 	if updateStatus.MatchedCount == 0 {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   error.USER_NOT_FOUND,
+			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
 		}
 	}
@@ -339,7 +354,7 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 	if updateStatus.ModifiedCount == 0 {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_UPDATED,
+			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated",
 		}
 	}
@@ -352,7 +367,7 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_UPDATED,
+			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User devices not updated",
 		}
 	}
@@ -360,7 +375,7 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 	if updateStatus.MatchedCount != 0 && updateStatus.ModifiedCount == 0 {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_UPDATED,
+			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User devices not updated",
 		}
 	}
@@ -370,17 +385,20 @@ func EditUserEmail(client *mongo.Client, mail *EmailChangeRequest) *models.Error
 
 // Change profile picture logic
 //
-// [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to change email
 // [param] picture | []byte: picture to change
 //
 // [return] *models.Error: error if any
-func EditUserProfilePicture(client *mongo.Client, user *models.User, picture []byte) *models.Error {
+func EditUserProfilePicture(user *models.User, picture []byte) *models.Error {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.EMPTY_EMAIL,
+			Error:   valerror.EMPTY_EMAIL,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -393,7 +411,7 @@ func EditUserProfilePicture(client *mongo.Client, user *models.User, picture []b
 		if err != nil {
 			return &models.Error{
 				Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-				Error:   error.USER_NOT_UPDATED,
+				Error:   valerror.USER_NOT_UPDATED,
 				Message: "User not updated, image not saved :" + err.Error(),
 			}
 		}
@@ -406,18 +424,18 @@ func EditUserProfilePicture(client *mongo.Client, user *models.User, picture []b
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_UPDATED,
+			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated, image not saved :" + err.Error(),
 		}
 	}
 
 	user.ProfilePic = profilePicPath
-	editErr := EditUser(client, user)
+	editErr := EditUser(user)
 
 	if editErr != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_UPDATED,
+			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated",
 		}
 	}
@@ -427,16 +445,19 @@ func EditUserProfilePicture(client *mongo.Client, user *models.User, picture []b
 
 // Delete user logic
 //
-// [param] client | *mongo.Client: client to the database
 // [param] user | models.User: user to delete
 //
 // [return] *models.Error: error if any
-func DeleteUser(client *mongo.Client, user *models.User) *models.Error {
+func DeleteUser(user *models.User) *models.Error {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(user.Email) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.EMPTY_EMAIL,
+			Error:   valerror.EMPTY_EMAIL,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -448,7 +469,7 @@ func DeleteUser(client *mongo.Client, user *models.User) *models.Error {
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_DELETED,
+			Error:   valerror.USER_NOT_DELETED,
 			Message: "User not deleted",
 		}
 	}
@@ -460,7 +481,7 @@ func DeleteUser(client *mongo.Client, user *models.User) *models.Error {
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_DELETED,
+			Error:   valerror.USER_NOT_DELETED,
 			Message: "User not deleted",
 		}
 	}
@@ -474,7 +495,7 @@ func DeleteUser(client *mongo.Client, user *models.User) *models.Error {
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_DELETED,
+			Error:   valerror.USER_NOT_DELETED,
 			Message: "User not deleted",
 		}
 	}
@@ -482,7 +503,7 @@ func DeleteUser(client *mongo.Client, user *models.User) *models.Error {
 	if deleteResult.DeletedCount == 0 {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   error.USER_NOT_FOUND,
+			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
 		}
 	}
@@ -491,7 +512,11 @@ func DeleteUser(client *mongo.Client, user *models.User) *models.Error {
 }
 
 // Get user logic
-func GetUser(client *mongo.Client, user *models.User, secure bool) (*models.User, *models.Error) { // get user from database
+func GetUser(user *models.User, secure bool) (*models.User, *models.Error) { // get user from database
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
 	var found models.User
@@ -500,7 +525,7 @@ func GetUser(client *mongo.Client, user *models.User, secure bool) (*models.User
 	if err != nil {
 		return nil, &models.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   error.USER_NOT_FOUND,
+			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
 		}
 	}
@@ -514,16 +539,19 @@ func GetUser(client *mongo.Client, user *models.User, secure bool) (*models.User
 
 // Validate user logic
 //
-// [param] client | *mongo.Client: client to the database
 // [param] code | string: code to validate
 //
 // [return] *models.Error: error if any
-func ValidateUser(client *mongo.Client, code string) *models.Error {
+func ValidateUser(code string) *models.Error {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(code) {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.INVALID_VALIDATION_CODE,
+			Error:   valerror.INVALID_VALIDATION_CODE,
 			Message: "Code cannot be empty",
 		}
 	}
@@ -540,7 +568,7 @@ func ValidateUser(client *mongo.Client, code string) *models.Error {
 	if err != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.INVALID_VALIDATION_CODE,
+			Error:   valerror.INVALID_VALIDATION_CODE,
 			Message: "Invalid validation code",
 		}
 	}
@@ -548,7 +576,7 @@ func ValidateUser(client *mongo.Client, code string) *models.Error {
 	if user.Validated {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_OK,
-			Error:   error.USER_ALREADY_VALIDATED,
+			Error:   valerror.USER_ALREADY_VALIDATED,
 			Message: "User already validated",
 		}
 	}
@@ -556,7 +584,7 @@ func ValidateUser(client *mongo.Client, code string) *models.Error {
 	if user.ValidationCode != code {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   error.INVALID_VALIDATION_CODE,
+			Error:   valerror.INVALID_VALIDATION_CODE,
 			Message: "Invalid validation code",
 		}
 	}
@@ -570,7 +598,7 @@ func ValidateUser(client *mongo.Client, code string) *models.Error {
 	if result.MatchedCount == 0 {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   error.USER_NOT_FOUND,
+			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
 		}
 	}
@@ -578,7 +606,7 @@ func ValidateUser(client *mongo.Client, code string) *models.Error {
 	if editerr != nil {
 		return &models.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   error.USER_NOT_UPDATED,
+			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not validated: " + editerr.Error(),
 		}
 	}
@@ -633,10 +661,14 @@ func authorizationOk(email string, password string, coll *mongo.Collection) *mod
 
 // Get user from token
 //
-//	[param] client | *mongo.Client : The client to the database
 //	[param] token | *string : The token to check
-//	[param] tokenUser | *models.User : The user found or empty --> *models.Error: error if any
-func getUserFromToken(client *mongo.Client, token string) (models.User, *models.Error) {
+//	[return] tokenUser | *models.User : The user found or empty --> *models.Error: error if any
+//	[return] *models.Error: error if any
+func getUserFromToken(token string) (models.User, *models.Error) {
+
+	// Connect database
+	var client = database.Connect()
+	defer database.Disconnect(*client)
 
 	var tokenDevice models.Device
 
@@ -646,7 +678,7 @@ func getUserFromToken(client *mongo.Client, token string) (models.User, *models.
 	if err != nil {
 		return models.User{}, &models.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   error.INVALID_TOKEN,
+			Error:   valerror.INVALID_TOKEN,
 			Message: "User not matching token",
 		}
 	}
@@ -659,7 +691,7 @@ func getUserFromToken(client *mongo.Client, token string) (models.User, *models.
 	if err != nil {
 		return models.User{}, &models.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   error.INVALID_TOKEN,
+			Error:   valerror.INVALID_TOKEN,
 			Message: "User not matching token",
 		}
 	}
@@ -672,7 +704,7 @@ func getUserFromToken(client *mongo.Client, token string) (models.User, *models.
 //	[param] token | string : The token to check
 //
 //	[return] bool : True if token is valid --> *models.Error: error if any
-func IsTokenValid(client *mongo.Client, token string) (*models.User, *models.Error) {
+func IsTokenValid(token string) (*models.User, *models.Error) {
 
 	// decode token
 	claims, err := utils.DecryptToken(token, configuration.Params.Secret)
@@ -680,7 +712,7 @@ func IsTokenValid(client *mongo.Client, token string) (*models.User, *models.Err
 	if err != nil {
 		return nil, &models.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   error.INVALID_TOKEN,
+			Error:   valerror.INVALID_TOKEN,
 			Message: "invalid token format",
 		}
 	}
@@ -692,12 +724,12 @@ func IsTokenValid(client *mongo.Client, token string) (*models.User, *models.Err
 
 	email := claims.Claims.(jwt.MapClaims)["email"].(string)
 
-	foundUser, tokenUserErr := getUserFromToken(client, token)
+	foundUser, tokenUserErr := getUserFromToken(token)
 
 	if tokenUserErr != nil {
 		return nil, &models.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   error.INVALID_TOKEN,
+			Error:   valerror.INVALID_TOKEN,
 			Message: "invalid token",
 		}
 	}
@@ -705,7 +737,7 @@ func IsTokenValid(client *mongo.Client, token string) (*models.User, *models.Err
 	if foundUser.Email != email {
 		return nil, &models.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   error.INVALID_TOKEN,
+			Error:   valerror.INVALID_TOKEN,
 			Message: "invalid token",
 		}
 	}

@@ -3,90 +3,65 @@ package tests
 import (
 	"testing"
 
-	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-dal/mock"
 	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
-	"github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/models"
+	"github.com/akrck02/valhalla-core-sdk/valerror"
 )
 
 func TestCreateProject(t *testing.T) {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
-
-	user := RegisterMockTestUser(t, client)
-	CreateMockTestProjectWithUser(t, client, user)
-	DeleteTestUser(t, client, user)
+	user := RegisterMockTestUser(t)
+	CreateMockTestProjectWithUser(t, user)
+	DeleteTestUser(t, user)
 }
 
 func TestCreateProjectWithoutOwner(t *testing.T) {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
 	project := models.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
 	}
 
-	CreateTestProjectWithError(t, client, &project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_OWNER)
+	CreateTestProjectWithError(t, &project, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_PROJECT_OWNER)
 }
 
 func TestCreateProjectWithoutName(t *testing.T) {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
 	project := &models.Project{
 		Description: mock.ProjectDescription(),
 		Owner:       mock.Email(),
 	}
 
-	CreateTestProjectWithError(t, client, project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_NAME)
+	CreateTestProjectWithError(t, project, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_PROJECT_NAME)
 }
 func TestCreateProjectWithoutDescription(t *testing.T) {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
 	project := &models.Project{
 		Name:  mock.ProjectName(),
 		Owner: mock.Email(),
 	}
 
-	CreateTestProjectWithError(t, client, project, http.HTTP_STATUS_BAD_REQUEST, error.EMPTY_PROJECT_DESCRIPTION)
+	CreateTestProjectWithError(t, project, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_PROJECT_DESCRIPTION)
 }
 
 func TestCreateProjectThatAlreadyExists(t *testing.T) {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+	user := RegisterMockTestUser(t)
+	project := CreateMockTestProjectWithUser(t, user)
 
-	user := RegisterMockTestUser(t, client)
-	project := CreateMockTestProjectWithUser(t, client, user)
-
-	CreateTestProjectWithError(t, client, project, http.HTTP_STATUS_CONFLICT, error.PROJECT_ALREADY_EXISTS)
-	DeleteTestUser(t, client, user)
+	CreateTestProjectWithError(t, project, http.HTTP_STATUS_CONFLICT, valerror.PROJECT_ALREADY_EXISTS)
+	DeleteTestUser(t, user)
 }
 
 func TestGetUserProjects(t *testing.T) {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+	user := RegisterMockTestUser(t)
+	project := CreateMockTestProjectWithUser(t, user)
+	project2 := CreateMockTestProjectWithUser(t, user)
 
-	user := RegisterMockTestUser(t, client)
-	project := CreateMockTestProjectWithUser(t, client, user)
-	project2 := CreateMockTestProjectWithUser(t, client, user)
-
-	projects := projectdal.GetUserProjects(client, user.Email)
+	projects := projectdal.GetUserProjects(user.Email)
 
 	if len(projects) == 0 {
 		t.Errorf("No projects found for user: %v", user.Email)
@@ -104,5 +79,5 @@ func TestGetUserProjects(t *testing.T) {
 		t.Errorf("Incorrect project found: %v", projects[1].Name)
 	}
 
-	DeleteTestUser(t, client, user)
+	DeleteTestUser(t, user)
 }

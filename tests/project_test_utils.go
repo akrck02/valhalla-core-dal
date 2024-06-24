@@ -7,16 +7,14 @@ import (
 	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // CreateMockTestProject creates a project for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] client | *mongo.Client: Database client
 //
 // [return] models.Project: Created project
-func CreateMockTestProjectWithUser(t *testing.T, client *mongo.Client, user *models.User) *models.Project {
+func CreateMockTestProjectWithUser(t *testing.T, user *models.User) *models.Project {
 
 	project := &models.Project{
 		Name:        mock.ProjectName(),
@@ -24,20 +22,19 @@ func CreateMockTestProjectWithUser(t *testing.T, client *mongo.Client, user *mod
 		Owner:       user.Email,
 	}
 
-	return CreateTestProjectWithUser(t, client, project, user)
+	return CreateTestProjectWithUser(t, project, user)
 }
 
 // CreateTestProject creates a project for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] client | *mongo.Client: Database client
 // [param] project | *models.Project: Project to create
 //
 // [return] *models.Project: Created project
-func CreateTestProjectWithUser(t *testing.T, client *mongo.Client, project *models.Project, user *models.User) *models.Project {
+func CreateTestProjectWithUser(t *testing.T, project *models.Project, user *models.User) *models.Project {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
-	err := projectdal.CreateProject(client, project)
+	err := projectdal.CreateProject(project)
 
 	if err != nil {
 		t.Errorf("Error creating project: %v", err)
@@ -51,11 +48,10 @@ func CreateTestProjectWithUser(t *testing.T, client *mongo.Client, project *mode
 // CreateTestProjectWithoutOwner creates a project without an owner for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] client | *mongo.Client: Database client
-func CreateTestProjectWithError(t *testing.T, client *mongo.Client, project *models.Project, status int, errorcode int) {
+func CreateTestProjectWithError(t *testing.T, project *models.Project, status int, errorcode int) {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
-	err := projectdal.CreateProject(client, project)
+	err := projectdal.CreateProject(project)
 
 	if err == nil {
 		t.Error("Project created successfully")
@@ -74,12 +70,11 @@ func CreateTestProjectWithError(t *testing.T, client *mongo.Client, project *mod
 // DeleteTestProject deletes a project for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] client | *mongo.Client: Database client
 // [param] project | *models.Project: Project to delete
-func DeleteTestProject(t *testing.T, client *mongo.Client, project *models.Project) {
+func DeleteTestProject(t *testing.T, project *models.Project) {
 
 	log.FormattedInfo("Deleting project: ${0}", project.Name)
-	err := projectdal.DeleteProject(client, project)
+	err := projectdal.DeleteProject(project)
 
 	if err != nil {
 		t.Errorf("Error deleting project: %v", err)

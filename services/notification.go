@@ -1,8 +1,8 @@
 package services
 
 import (
+	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/models"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Alert struct {
@@ -10,10 +10,10 @@ type Alert struct {
 	Message string
 }
 
-func AlertTeam(client *mongo.Client, team models.Team) models.Error {
+func AlertTeam(team models.Team) models.Error {
 
 	return models.Error{
-		Status:  200,
+		Status:  http.HTTP_STATUS_OK,
 		Message: "Ok.",
 	}
 }
