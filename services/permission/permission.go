@@ -9,6 +9,9 @@ func CanEditUser(author *models.User, user *models.User) bool {
 func CanSeeUser(author *models.User, user *models.User) bool {
 	return author.Email == user.Email
 }
+func CanDeleteProject(logedUser *models.User, project *models.Project) bool {
+	return logedUser.ID == project.Owner
+}
 
 //Projects
 
