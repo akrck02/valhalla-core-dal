@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/models"
+	teammodels "github.com/akrck02/valhalla-core-sdk/models/team"
 )
 
 type Alert struct {
@@ -10,7 +11,7 @@ type Alert struct {
 	Message string
 }
 
-func AlertTeam(team models.Team) models.Error {
+func AlertTeam(team teammodels.Team) models.Error {
 
 	return models.Error{
 		Status:  http.HTTP_STATUS_OK,

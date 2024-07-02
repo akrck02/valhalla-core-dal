@@ -6,6 +6,8 @@ import (
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
+	devicemodels "github.com/akrck02/valhalla-core-sdk/models/device"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 
@@ -20,7 +22,7 @@ import (
 // [param] device | models.Device: device to add
 //
 // [return] device: the device with new token --> error : The error that occurred
-func AddUserDevice(user *models.User, device *models.Device) (*models.Device, *models.Error) {
+func AddUserDevice(user *usersmodels.User, device *devicemodels.Device) (*devicemodels.Device, *models.Error) {
 
 	token, err := utils.GenerateAuthToken(user, device, configuration.Params.Secret)
 
@@ -71,9 +73,9 @@ func AddUserDevice(user *models.User, device *models.Device) (*models.Device, *m
 // [param] device | models.Device: device to find
 //
 // [return] models.Device: device found --> error : The error that occurred
-func FindDevice(coll *mongo.Collection, device *models.Device) (*models.Device, *models.Error) {
+func FindDevice(coll *mongo.Collection, device *devicemodels.Device) (*devicemodels.Device, *models.Error) {
 
-	var found models.Device
+	var found devicemodels.Device
 	err := coll.FindOne(
 		database.GetDefaultContext(),
 		bson.M{"user": device.User, "address": device.Address, "useragent": device.UserAgent},
@@ -95,9 +97,9 @@ func FindDevice(coll *mongo.Collection, device *models.Device) (*models.Device, 
 // [param] token | string: token of the device
 //
 // [return] models.Device: device found --> error : The error that occurred
-func FindDeviceByAuthToken(coll *mongo.Collection, device *models.Device) (*models.Device, *models.Error) {
+func FindDeviceByAuthToken(coll *mongo.Collection, device *devicemodels.Device) (*devicemodels.Device, *models.Error) {
 
-	var found models.Device
+	var found devicemodels.Device
 	err := coll.FindOne(
 		database.GetDefaultContext(),
 		bson.M{"user": device.User, "address": device.Address, "useragent": device.UserAgent, "token": device.Token},
@@ -121,7 +123,7 @@ func FindDeviceByAuthToken(coll *mongo.Collection, device *models.Device) (*mode
 // [param] device | models.Device: device to remove
 //
 // [return] error: The error that occurred
-func DeleteDevice(device *models.Device) *models.Error {
+func DeleteDevice(device *devicemodels.Device) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -153,7 +155,7 @@ func DeleteDevice(device *models.Device) *models.Error {
 // [param] device | models.Device: device to check
 //
 // [return] error: The error that occurred
-func DeviceExists(device *models.Device) *models.Error {
+func DeviceExists(device *devicemodels.Device) *models.Error {
 
 	// Connect database
 	var client = database.Connect()

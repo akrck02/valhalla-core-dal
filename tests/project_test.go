@@ -6,7 +6,7 @@ import (
 	"github.com/akrck02/valhalla-core-dal/mock"
 	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
 	"github.com/akrck02/valhalla-core-sdk/http"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 )
 
@@ -19,7 +19,7 @@ func TestCreateProject(t *testing.T) {
 
 func TestCreateProjectWithoutOwner(t *testing.T) {
 
-	project := models.Project{
+	project := projectmodels.Project{
 		Name:        "Test Project",
 		Description: "Test Description",
 	}
@@ -29,7 +29,7 @@ func TestCreateProjectWithoutOwner(t *testing.T) {
 
 func TestCreateProjectWithoutName(t *testing.T) {
 
-	project := &models.Project{
+	project := &projectmodels.Project{
 		Description: mock.ProjectDescription(),
 		Owner:       mock.Email(),
 	}
@@ -38,7 +38,7 @@ func TestCreateProjectWithoutName(t *testing.T) {
 }
 func TestCreateProjectWithoutDescription(t *testing.T) {
 
-	project := &models.Project{
+	project := &projectmodels.Project{
 		Name:  mock.ProjectName(),
 		Owner: mock.Email(),
 	}

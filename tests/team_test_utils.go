@@ -5,7 +5,8 @@ import (
 
 	"github.com/akrck02/valhalla-core-dal/mock"
 	teamdal "github.com/akrck02/valhalla-core-dal/services/team"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	teammodels "github.com/akrck02/valhalla-core-sdk/models/team"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 )
 
 // CreateMockTestTeam creates a team for testing purposes
@@ -13,10 +14,10 @@ import (
 //
 // [param] t | *testing.T: Testing object
 //
-// [return] models.Team: Created team
-func CreateMockTestTeamWithOwner(t *testing.T, owner *models.User) *models.Team {
+// [return] teammodels.Team: Created team
+func CreateMockTestTeamWithOwner(t *testing.T, owner *usersmodels.User) *teammodels.Team {
 
-	team := &models.Team{
+	team := &teammodels.Team{
 		Name:        mock.TeamName(),
 		Description: mock.TeamDescription(),
 		Owner:       owner.ID,
@@ -28,10 +29,10 @@ func CreateMockTestTeamWithOwner(t *testing.T, owner *models.User) *models.Team 
 // Creates a team for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] team | *models.Team: Team to create
+// [param] team | *teammodels.Team: Team to create
 //
-// [return] *models.Team: Created team
-func CreateTestTeam(t *testing.T, team *models.Team) *models.Team {
+// [return] *teammodels.Team: Created team
+func CreateTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
 
 	err := teamdal.CreateTeam(team)
 
@@ -47,10 +48,10 @@ func CreateTestTeam(t *testing.T, team *models.Team) *models.Team {
 // Gets a team for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] team | *models.Team: Team to get
+// [param] team | *teammodels.Team: Team to get
 //
-// [return] *models.Team: Got team
-func GetTestTeam(t *testing.T, team *models.Team) *models.Team {
+// [return] *teammodels.Team: Got team
+func GetTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
 
 	getTeam, err := teamdal.GetTeam(team)
 
@@ -65,10 +66,10 @@ func GetTestTeam(t *testing.T, team *models.Team) *models.Team {
 // Edits a team for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] team | *models.Team: Team to edit
+// [param] team | *teammodels.Team: Team to edit
 //
-// [return] team | *models.Team: Edited team
-func EditTestTeam(t *testing.T, team *models.Team) *models.Team {
+// [return] team | *teammodels.Team: Edited team
+func EditTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
 
 	team.Name = mock.TeamNameLong()
 	team.Description = mock.TeamDescriptionLong()
@@ -87,8 +88,8 @@ func EditTestTeam(t *testing.T, team *models.Team) *models.Team {
 // Deletes a team for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] team | *models.Team: Team to delete
-func DeleteTestTeam(t *testing.T, team *models.Team) {
+// [param] team | *teammodels.Team: Team to delete
+func DeleteTestTeam(t *testing.T, team *teammodels.Team) {
 
 	err := teamdal.DeleteTeam(team)
 
@@ -103,11 +104,11 @@ func DeleteTestTeam(t *testing.T, team *models.Team) {
 // Adds a team member for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] team | *models.Team: Team to add member to
-// [param] user | *models.User: User to add to team
+// [param] team | *teammodels.Team: Team to add member to
+// [param] user | *usersmodels.User: User to add to team
 //
-// [return] *models.Team: Team with added member
-func AddTestTeamMember(t *testing.T, team *models.Team, user *models.User) *models.Team {
+// [return] *teammodels.Team: Team with added member
+func AddTestTeamMember(t *testing.T, team *teammodels.Team, user *usersmodels.User) *teammodels.Team {
 
 	err := teamdal.AddMember(
 		&teamdal.MemberChangeRequest{

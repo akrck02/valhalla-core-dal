@@ -4,6 +4,7 @@ import (
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/models"
+	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 
@@ -16,7 +17,7 @@ import (
 // [param] project | models.Project : The project to create
 //
 // [return] *models.Error : The error
-func CreateProject(project *models.Project) *models.Error {
+func CreateProject(project *projectmodels.Project) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -75,7 +76,7 @@ func CreateProject(project *models.Project) *models.Error {
 // [param] project | models.Project : The project to edit
 //
 // [return] *models.Error : The error
-func EditProject(project *models.Project) *models.Error {
+func EditProject(project *projectmodels.Project) *models.Error {
 
 	return nil
 }
@@ -85,7 +86,7 @@ func EditProject(project *models.Project) *models.Error {
 // [param] project | models.Project : The project to delete
 //
 // [return] *models.Error : The error
-func DeleteProject(project *models.Project) *models.Error {
+func DeleteProject(project *projectmodels.Project) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -140,7 +141,7 @@ func DeleteProject(project *models.Project) *models.Error {
 // [param] project | models.Project : The project to get
 //
 // [return] *models.Error : The error
-func GetProject(project *models.Project) (*models.Project, *models.Error) { // get project from database
+func GetProject(project *projectmodels.Project) (*projectmodels.Project, *models.Error) { // get project from database
 
 	// Connect database
 	var client = database.Connect()
@@ -148,7 +149,7 @@ func GetProject(project *models.Project) (*models.Project, *models.Error) { // g
 
 	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
 
-	found := models.Project{}
+	found := projectmodels.Project{}
 	err := projects.FindOne(database.GetDefaultContext(), bson.M{"name": project.Name}).Decode(&found)
 
 	if err != nil {
@@ -167,7 +168,7 @@ func GetProject(project *models.Project) (*models.Project, *models.Error) { // g
 // [param] email | string : The email of the user
 //
 // [return] []models.Project : The projects of the user
-func GetUserProjects(email string) []models.Project {
+func GetUserProjects(email string) []projectmodels.Project {
 
 	// Connect database
 	var client = database.Connect()
@@ -183,7 +184,7 @@ func GetUserProjects(email string) []models.Project {
 		return nil
 	}
 
-	var result []models.Project
+	var result []projectmodels.Project
 	cursor.All(database.GetDefaultContext(), &result)
 
 	return result
@@ -199,7 +200,7 @@ func GetUserProjects(email string) []models.Project {
 func nameExists(coll *mongo.Collection, name string, owner string) bool {
 	filter := bson.M{"name": name, "owner": owner}
 
-	var result *models.Project
+	var result *projectmodels.Project
 	coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	return result != nil

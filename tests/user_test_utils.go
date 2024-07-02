@@ -6,7 +6,7 @@ import (
 	"github.com/akrck02/valhalla-core-dal/mock"
 	userdal "github.com/akrck02/valhalla-core-dal/services/user"
 	"github.com/akrck02/valhalla-core-sdk/log"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 )
 
 // RegisterMockTestUser registers a fake user
@@ -14,10 +14,10 @@ import (
 //
 // [param] t | *testing.T : testing object
 //
-// [return] *models.User : user object
-func RegisterMockTestUser(t *testing.T) *models.User {
+// [return] *usersmodels.User : user object
+func RegisterMockTestUser(t *testing.T) *usersmodels.User {
 
-	var user = &models.User{
+	var user = &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.Password(),
 		Username: mock.Username(),
@@ -33,7 +33,7 @@ func RegisterMockTestUser(t *testing.T) *models.User {
 // [param] user | *models.User : user object
 //
 // [return] *models.User : user object
-func RegisterTestUser(t *testing.T, user *models.User) *models.User {
+func RegisterTestUser(t *testing.T, user *usersmodels.User) *usersmodels.User {
 
 	log.FormattedInfo("Registering user: ${0}", user.Email)
 	log.FormattedInfo("Password: ${0}", user.Password)
@@ -55,7 +55,7 @@ func RegisterTestUser(t *testing.T, user *models.User) *models.User {
 // [param] user | *models.User : user object
 // [param] status | int : HTTP status
 // [param] errorcode | int : error code
-func RegisterTestUserWithError(t *testing.T, user *models.User, status int, errorcode int) {
+func RegisterTestUserWithError(t *testing.T, user *usersmodels.User, status int, errorcode int) {
 
 	log.FormattedInfo("Registering user: ${0}", user.Email)
 	log.FormattedInfo("Password: ${0}", user.Password)
@@ -85,7 +85,7 @@ func RegisterTestUserWithError(t *testing.T, user *models.User, status int, erro
 // [param] user | *models.User : user object
 //
 // [return] string : token
-func LoginTestUser(t *testing.T, user *models.User, ip string, userAgent string) string {
+func LoginTestUser(t *testing.T, user *usersmodels.User, ip string, userAgent string) string {
 
 	log.FormattedInfo("Logging in user: ${0}", user.Email)
 	log.FormattedInfo("Password: ${0}", user.Password)
@@ -123,7 +123,7 @@ func LoginTestUser(t *testing.T, user *models.User, ip string, userAgent string)
 // [param] userAgent | string : user agent
 // [param] status | int : HTTP status
 // [param] errorcode | int : error code
-func LoginTestUserWithError(t *testing.T, user *models.User, ip string, userAgent string, status int, errorcode int) {
+func LoginTestUserWithError(t *testing.T, user *usersmodels.User, ip string, userAgent string, status int, errorcode int) {
 
 	log.FormattedInfo("Logging in user: ${0}", user.Email)
 	log.FormattedInfo("Password: ${0}", user.Password)
@@ -155,7 +155,7 @@ func LoginAuthTestUser(t *testing.T, email string, token string) {
 
 	log.Info("Checking if the token is valid")
 
-	var authLogin = &models.AuthLogin{
+	var authLogin = &usersmodels.AuthLogin{
 		Email:     email,
 		AuthToken: token,
 	}
@@ -174,8 +174,8 @@ func LoginAuthTestUser(t *testing.T, email string, token string) {
 // DeleteUser deletes a user
 //
 // [param] t | *testing.T : testing object
-// [param] user | *models.User : user object
-func DeleteTestUser(t *testing.T, user *models.User) {
+// [param] user | *usersmodels.User : user object
+func DeleteTestUser(t *testing.T, user *usersmodels.User) {
 
 	log.FormattedInfo("Deleting user: ${0}", user.Email)
 
@@ -193,10 +193,10 @@ func DeleteTestUser(t *testing.T, user *models.User) {
 // DeleteTestUserWithError deletes a user
 //
 // [param] t | *testing.T : testing object
-// [param] user | *models.User : user object
+// [param] user | *usersmodels.User : user object
 // [param] status | int : HTTP status
 // [param] errorcode | int : error code
-func DeleteTestUserWithError(t *testing.T, user *models.User, status int, errorcode int) {
+func DeleteTestUserWithError(t *testing.T, user *usersmodels.User, status int, errorcode int) {
 
 	log.FormattedInfo("Deleting user: ${0}", user.Email)
 
@@ -220,7 +220,7 @@ func DeleteTestUserWithError(t *testing.T, user *models.User, status int, errorc
 // EditTestUser edits a user
 //
 // [param] t | *testing.T : testing object
-// [param] user | *models.User : user object
+// [param] user | *usersmodels.User : user object
 
 func EditTestUserEmail(t *testing.T, emailChangeRequest *userdal.EmailChangeRequest) {
 
@@ -241,7 +241,7 @@ func EditTestUserEmail(t *testing.T, emailChangeRequest *userdal.EmailChangeRequ
 // EditTestUser edits a user
 //
 // [param] t | *testing.T : testing object
-// [param] user | *models.User : user object
+// [param] user | *usersmodels.User : user object
 // [param] status | int : HTTP status
 // [param] errorcode | int : error code
 func EditTestUserEmailWithError(t *testing.T, emailChangeRequest *userdal.EmailChangeRequest, status int, errorcode int) {
@@ -269,10 +269,10 @@ func EditTestUserEmailWithError(t *testing.T, emailChangeRequest *userdal.EmailC
 // EditTestUser edits a user
 //
 // [param] t | *testing.T : testing object
-// [param] user | *models.User : user object
+// [param] user | *usersmodels.User : user object
 // [param] status | int : HTTP status
 // [param] errorcode | int : error code
-func EditTestUser(t *testing.T, user *models.User) {
+func EditTestUser(t *testing.T, user *usersmodels.User) {
 
 	log.FormattedInfo("Editing user: ${0}", user.Email)
 	err := userdal.EditUser(user)
@@ -289,10 +289,10 @@ func EditTestUser(t *testing.T, user *models.User) {
 // EditTestUser edits a user
 //
 // [param] t | *testing.T : testing object
-// [param] user | *models.User : user object
+// [param] user | *usersmodels.User : user object
 // [param] status | int : HTTP status
 // [param] errorcode | int : error code
-func EditTestUserWithError(t *testing.T, user *models.User, status int, errorcode int) {
+func EditTestUserWithError(t *testing.T, user *usersmodels.User, status int, errorcode int) {
 
 	log.FormattedInfo("Editing user: ${0}", user.Email)
 	err := userdal.EditUser(user)
