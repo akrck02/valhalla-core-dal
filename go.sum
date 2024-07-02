@@ -1,9 +1,5 @@
-github.com/akrck02/valhalla-core-sdk v0.0.11-20240603165330-feature-teams h1:kuJDjtJSJtbULXtDo/6QHB5140gbL0YYR6HrtJ2/q3s=
-github.com/akrck02/valhalla-core-sdk v0.0.11-20240603165330-feature-teams/go.mod h1:yPZi0IBeyQFs3a7wOtR9QoF93bck8nKcTL5BzMjjs1g=
-github.com/akrck02/valhalla-core-sdk v0.0.11-20240609132557-feature-teams h1:G2G6RcDfp/WDNjWG0l7GyJTsTAlb+/l58jabrvjNCf0=
-github.com/akrck02/valhalla-core-sdk v0.0.11-20240609132557-feature-teams/go.mod h1:yPZi0IBeyQFs3a7wOtR9QoF93bck8nKcTL5BzMjjs1g=
-github.com/akrck02/valhalla-core-sdk v0.0.11-20240630133027-feature-teams h1:FWtKk5BjCmAIMxUKzquYEf3uEUHwT+mTvhUXCO8THcY=
-github.com/akrck02/valhalla-core-sdk v0.0.11-20240630133027-feature-teams/go.mod h1:yPZi0IBeyQFs3a7wOtR9QoF93bck8nKcTL5BzMjjs1g=
+github.com/akrck02/valhalla-core-sdk v0.0.11-20240702235716-feature-teams h1:SgdAhxSoBQ+Kk4rgoBcG8WBVAVSdaqb4R2oMjnp2wo4=
+github.com/akrck02/valhalla-core-sdk v0.0.11-20240702235716-feature-teams/go.mod h1:qBovw83Vo/iXggXZS4ttcMqF9xFSR5ogu7G+RWh/jGg=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/golang-jwt/jwt/v5 v5.2.1 h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk=

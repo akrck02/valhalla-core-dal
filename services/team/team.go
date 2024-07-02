@@ -3,7 +3,7 @@ package teamdal
 import (
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-sdk/http"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	systemmodels "github.com/akrck02/valhalla-core-sdk/models/system"
 	teammodels "github.com/akrck02/valhalla-core-sdk/models/team"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
@@ -19,12 +19,7 @@ type MemberChangeRequest struct {
 	User string `json:"userid"`
 }
 
-// Create team logic
-//
-// [param] user | *models.Team: team to create
-//
-// [return] error: *models.Error: error if any
-func CreateTeam(team *teammodels.Team) *models.Error {
+func CreateTeam(team *teammodels.Team) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -32,7 +27,7 @@ func CreateTeam(team *teammodels.Team) *models.Error {
 
 	// Check if team name is empty
 	if utils.IsEmpty(team.Name) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_TEAM_NAME,
 			Message: "Team cannot be nameless",
@@ -43,7 +38,7 @@ func CreateTeam(team *teammodels.Team) *models.Error {
 	checkedName := utils.ValidateName(team.Name)
 
 	if checkedName.Response != http.HTTP_STATUS_OK {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   checkedName.Response,
 			Message: checkedName.Message,
@@ -52,7 +47,7 @@ func CreateTeam(team *teammodels.Team) *models.Error {
 
 	// Check if team description is empty
 	if utils.IsEmpty(team.Description) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_TEAM_DESCRIPTION,
 			Message: "Team cannot be descriptionless",
@@ -63,7 +58,7 @@ func CreateTeam(team *teammodels.Team) *models.Error {
 	checkedDescription := utils.ValidateDescription(team.Description)
 
 	if checkedDescription.Response != http.HTTP_STATUS_OK {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   checkedDescription.Response,
 			Message: checkedDescription.Message,
@@ -79,7 +74,7 @@ func CreateTeam(team *teammodels.Team) *models.Error {
 
 	// Check if team owner is empty
 	if utils.IsEmpty(team.Owner) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.NO_OWNER,
 			Message: "Team requires an owner",
@@ -92,7 +87,7 @@ func CreateTeam(team *teammodels.Team) *models.Error {
 	found := teamExists(coll, team)
 
 	if found.Name != "" {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.TEAM_ALREADY_EXISTS,
 			Message: "Team already exists with name " + team.Name,
@@ -106,7 +101,7 @@ func CreateTeam(team *teammodels.Team) *models.Error {
 	res, err2 := coll.InsertOne(database.GetDefaultContext(), team)
 
 	if err2 != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.TEAM_ALREADY_EXISTS,
 			Message: "Team already exists",
@@ -117,12 +112,7 @@ func CreateTeam(team *teammodels.Team) *models.Error {
 	return nil
 }
 
-// Delete team logic
-//
-// [param] team | *models.Team: team to delete
-//
-// [return] error: *models.Error: error if any
-func DeleteTeam(team *teammodels.Team) *models.Error {
+func DeleteTeam(team *teammodels.Team) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -133,7 +123,7 @@ func DeleteTeam(team *teammodels.Team) *models.Error {
 	objID, err := utils.StringToObjectId(team.ID)
 
 	if err != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -146,7 +136,7 @@ func DeleteTeam(team *teammodels.Team) *models.Error {
 
 	// Check if team was deleted
 	if err != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.TEAM_NOT_FOUND,
 			Message: "Team not found",
@@ -156,12 +146,7 @@ func DeleteTeam(team *teammodels.Team) *models.Error {
 	return nil
 }
 
-// Edit team logic
-//
-// [param] team | *models.Team: team to edit
-//
-// [return] error: *models.Error: error if any
-func EditTeam(team *teammodels.Team) *models.Error {
+func EditTeam(team *teammodels.Team) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -172,7 +157,7 @@ func EditTeam(team *teammodels.Team) *models.Error {
 	objID, err := utils.StringToObjectId(team.ID)
 
 	if err != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -194,7 +179,7 @@ func EditTeam(team *teammodels.Team) *models.Error {
 
 	// Check if team was updated
 	if err != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not update team: " + err.Error(),
@@ -204,12 +189,7 @@ func EditTeam(team *teammodels.Team) *models.Error {
 	return nil
 }
 
-// Edit team owner logic
-//
-// [param] team | *models.Team: team to edit
-//
-// [return] error: *models.Error: error if any
-func EditTeamOwner(team *teammodels.Team) *models.Error {
+func EditTeamOwner(team *teammodels.Team) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -217,7 +197,7 @@ func EditTeamOwner(team *teammodels.Team) *models.Error {
 
 	// Check if team owner is empty
 	if utils.IsEmpty(team.Owner) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.NO_OWNER,
 			Message: "Team requires an owner",
@@ -229,7 +209,7 @@ func EditTeamOwner(team *teammodels.Team) *models.Error {
 	objID, err1 := utils.StringToObjectId(team.ID)
 
 	if err1 != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -259,7 +239,7 @@ func EditTeamOwner(team *teammodels.Team) *models.Error {
 	err3 := result.Err()
 
 	if err3 != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not change owner",
@@ -269,12 +249,7 @@ func EditTeamOwner(team *teammodels.Team) *models.Error {
 	return nil
 }
 
-// Add member to team logic
-//
-// [param] team | *models.Team: team to edit
-//
-// [return] error: *models.Error: error if any
-func AddMember(member *MemberChangeRequest) *models.Error {
+func AddMember(member *MemberChangeRequest) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -282,7 +257,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 
 	// Check if member is empty
 	if utils.IsEmpty(member.User) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.MEMBER_PARAMETER_EMPTY,
 			Message: "Adding a member requires a member",
@@ -291,7 +266,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 
 	// Check if team is empty
 	if utils.IsEmpty(member.Team) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.TEAM_PARAMETER_EMPTY,
 			Message: "Adding a member requires a team",
@@ -310,7 +285,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	objID, parseErr := utils.StringToObjectId(member.Team)
 
 	if parseErr != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -321,7 +296,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
 	if isUserMemberOrOwner(member) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.USER_ALREADY_MEMBER,
 			Message: "User is already a member of the team",
@@ -332,7 +307,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	result, parseErr := coll.UpdateByID(database.GetDefaultContext(), objID, bson.M{"$push": bson.M{"members": member.User}})
 
 	if parseErr != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not add member",
@@ -341,7 +316,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 
 	// Check if member was added
 	if result.MatchedCount == 0 {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_NO_CHANGE,
 			Error:   valerror.TEAM_NOT_FOUND,
 			Message: "Team member not added",
@@ -351,12 +326,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	return nil
 }
 
-// Remove member from team logic
-//
-// [param] team | *models.Team: team to edit
-//
-// [return] error: *models.Error: error if any
-func RemoveMember(member *MemberChangeRequest) *models.Error {
+func RemoveMember(member *MemberChangeRequest) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -364,7 +334,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 
 	// Check if member is empty
 	if utils.IsEmpty(member.User) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.MEMBER_PARAMETER_EMPTY,
 			Message: "Adding a member requires a member",
@@ -373,7 +343,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 
 	// Check if team is empty
 	if utils.IsEmpty(member.Team) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.TEAM_PARAMETER_EMPTY,
 			Message: "Adding a member requires a team",
@@ -385,7 +355,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 	objID, parseErr := utils.StringToObjectId(member.Team)
 
 	if parseErr != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -401,7 +371,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 
 	// deleting team owner is not allowed
 	if isOwner(member) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.CANNOT_DELETE_TEAM_OWNER,
 			Message: "User is owner of the team",
@@ -410,7 +380,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 
 	// Check if member is in team
 	if !isMember(member) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.USER_NOT_MEMBER_OF_THE_TEAM,
 			Message: "User is not a member of the team",
@@ -420,7 +390,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 	// Remove member from team
 	result, parseErr := client.Database(database.CurrentDatabase).Collection(database.TEAM).UpdateByID(database.GetDefaultContext(), objID, bson.M{"$pull": bson.M{"members": member.User}})
 	if parseErr != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not remove member",
@@ -429,7 +399,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 
 	// Check if member was removed
 	if result.MatchedCount == 0 {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_NO_CHANGE,
 			Error:   valerror.TEAM_NOT_FOUND,
 			Message: "Team member not removed",
@@ -439,12 +409,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 	return nil
 }
 
-// Get teams logic
-//
-// [param] user | *models.User: user
-//
-// [return] error: *models.Error: error if any
-func GetTeams(user *usersmodels.User) ([]*teammodels.Team, *models.Error) {
+func GetTeams(user *usersmodels.User) ([]*teammodels.Team, *systemmodels.Error) {
 
 	// Connect database
 	var client = database.Connect()
@@ -455,7 +420,7 @@ func GetTeams(user *usersmodels.User) ([]*teammodels.Team, *models.Error) {
 	teamsCursor, err := coll.Find(database.GetDefaultContext(), bson.M{"owner": user.ID})
 
 	if err != nil {
-		return nil, &models.Error{
+		return nil, &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.UNEXPECTED_ERROR,
 			Message: "Cannot find teams",
@@ -468,7 +433,7 @@ func GetTeams(user *usersmodels.User) ([]*teammodels.Team, *models.Error) {
 		var team teammodels.Team
 		err := teamsCursor.Decode(&team)
 		if err != nil {
-			return nil, &models.Error{
+			return nil, &systemmodels.Error{
 				Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 				Error:   valerror.UNEXPECTED_ERROR,
 				Message: "Cannot find teams",
@@ -482,12 +447,7 @@ func GetTeams(user *usersmodels.User) ([]*teammodels.Team, *models.Error) {
 	return teams, nil
 }
 
-// Get team logic
-//
-// [param] team | *models.Team: team to edit
-//
-// [return] error: *models.Error: error if any
-func GetTeam(team *teammodels.Team) (*teammodels.Team, *models.Error) {
+func GetTeam(team *teammodels.Team) (*teammodels.Team, *systemmodels.Error) {
 
 	// Connect database
 	var client = database.Connect()
@@ -496,7 +456,7 @@ func GetTeam(team *teammodels.Team) (*teammodels.Team, *models.Error) {
 	objID, err1 := utils.StringToObjectId(team.ID)
 
 	if err1 != nil {
-		return nil, &models.Error{
+		return nil, &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -509,7 +469,7 @@ func GetTeam(team *teammodels.Team) (*teammodels.Team, *models.Error) {
 	err2 := coll.FindOne(database.GetDefaultContext(), bson.M{"_id": objID}).Decode(&foundTeam)
 
 	if err2 != nil {
-		return nil, &models.Error{
+		return nil, &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.TEAM_NOT_FOUND,
 			Message: "Team not found",
@@ -519,12 +479,7 @@ func GetTeam(team *teammodels.Team) (*teammodels.Team, *models.Error) {
 	return &foundTeam, nil
 }
 
-// Search teams logic
-//
-// [param] searchText | *string: text to search
-//
-// [return] error: *models.Error: error if any
-func SearchTeams(searchText *string) (*[]teammodels.Team, *models.Error) {
+func SearchTeams(searchText *string) (*[]teammodels.Team, *systemmodels.Error) {
 
 	foundTeams := []teammodels.Team{}
 
@@ -532,7 +487,7 @@ func SearchTeams(searchText *string) (*[]teammodels.Team, *models.Error) {
 
 }
 
-func userExists(user string) *models.Error {
+func userExists(user string) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -544,7 +499,7 @@ func userExists(user string) *models.Error {
 	objID, err1 := utils.StringToObjectId(user)
 
 	if err1 != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -554,7 +509,7 @@ func userExists(user string) *models.Error {
 	err2 := coll.FindOne(database.GetDefaultContext(), bson.M{"_id": objID}).Decode(&foundUser)
 
 	if err2 != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.OWNER_DOESNT_EXIST,
 			Message: "User doesn't exists",
