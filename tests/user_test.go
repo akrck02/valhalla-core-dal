@@ -6,7 +6,7 @@ import (
 	userdal "github.com/akrck02/valhalla-core-dal/services/user"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 
 	"github.com/akrck02/valhalla-core-dal/mock"
@@ -20,7 +20,7 @@ func TestRegister(t *testing.T) {
 
 func TestRegisterNotEmail(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Password: mock.Password(),
 		Username: mock.Username(),
 	}
@@ -30,7 +30,7 @@ func TestRegisterNotEmail(t *testing.T) {
 
 func TestRegisterNotUsername(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.Password(),
 	}
@@ -40,7 +40,7 @@ func TestRegisterNotUsername(t *testing.T) {
 
 func TestRegisterNotPassword(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.Email(),
 		Username: mock.Username(),
 	}
@@ -50,7 +50,7 @@ func TestRegisterNotPassword(t *testing.T) {
 
 func TestRegisterNotDotEmail(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.EmailNotDot(),
 		Password: mock.Password(),
 		Username: mock.Username(),
@@ -61,7 +61,7 @@ func TestRegisterNotDotEmail(t *testing.T) {
 
 func TestRegisterNotAtEmail(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.EmailNotAt(),
 		Password: mock.Password(),
 		Username: mock.Username(),
@@ -72,7 +72,7 @@ func TestRegisterNotAtEmail(t *testing.T) {
 
 func TestRegisterShortMail(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.EmailShort(),
 		Password: mock.Password(),
 		Username: mock.Username(),
@@ -83,7 +83,7 @@ func TestRegisterShortMail(t *testing.T) {
 
 func TestRegisterNotSpecialCharactersPassword(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.PasswordNotSpecialChar(),
 		Username: mock.Username(),
@@ -94,7 +94,7 @@ func TestRegisterNotSpecialCharactersPassword(t *testing.T) {
 
 func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.PasswordNotLowerCase(),
 		Username: mock.Username(),
@@ -102,7 +102,7 @@ func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
 
 	RegisterTestUserWithError(t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_UPPER_LOWER_PASSWORD)
 
-	user = &models.User{
+	user = &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.PasswordNotUpperCase(),
 		Username: mock.Username(),
@@ -113,7 +113,7 @@ func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
 
 func TestRegisterShortPassword(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.PasswordShort(),
 		Username: mock.Username(),
@@ -124,7 +124,7 @@ func TestRegisterShortPassword(t *testing.T) {
 
 func TestRegisterNotNumbersPassword(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.PasswordNotNumber(),
 		Username: mock.Username(),
@@ -184,7 +184,7 @@ func TestDeleteUser(t *testing.T) {
 
 func TestDeleteUserNoEmail(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Password: mock.Password(),
 		Username: mock.Username(),
 	}
@@ -194,7 +194,7 @@ func TestDeleteUserNoEmail(t *testing.T) {
 
 func TestDeleteUserNotFound(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.Password(),
 		Username: mock.Username(),
@@ -208,7 +208,7 @@ func TestEditUserEmail(t *testing.T) {
 	email := mock.Email()
 	newEmail := "xXx" + mock.Email()
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    email,
 		Password: mock.Password(),
 		Username: mock.Username(),
@@ -299,7 +299,7 @@ func TestEditUserEmailExists(t *testing.T) {
 	newEmail := mock.Email() + "xXx"
 
 	// Create a user
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    email,
 		Password: mock.Password(),
 		Username: mock.Username(),
@@ -309,7 +309,7 @@ func TestEditUserEmailExists(t *testing.T) {
 	log.Jump()
 
 	// Create a new user with the new email
-	newUser := &models.User{
+	newUser := &usersmodels.User{
 		Email:    newEmail,
 		Password: mock.Password(),
 		Username: mock.Username(),
@@ -360,7 +360,7 @@ func TestEditUserPassword(t *testing.T) {
 
 func TestEditUserPasswordUserNotFound(t *testing.T) {
 
-	user := &models.User{
+	user := &usersmodels.User{
 		Email:    mock.Email(),
 		Password: mock.Password(),
 		Username: mock.Username(),

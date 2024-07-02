@@ -49,6 +49,7 @@ func TestAddTeamMember(t *testing.T) {
 	_ = AddTestTeamMember(t, team, member)
 	DeleteTestTeam(t, team)
 	DeleteTestUser(t, user)
+	DeleteTestUser(t, member)
 
 }
 

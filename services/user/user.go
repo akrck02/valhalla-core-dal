@@ -7,6 +7,8 @@ import (
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	"github.com/akrck02/valhalla-core-sdk/models"
+	devicemodels "github.com/akrck02/valhalla-core-sdk/models/device"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 
@@ -27,7 +29,7 @@ type EmailChangeRequest struct {
 // [param] user | *models.User: user to register
 //
 // [return] *models.Error: error if any
-func Register(user *models.User) *models.Error {
+func Register(user *usersmodels.User) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -126,7 +128,7 @@ func Register(user *models.User) *models.Error {
 // [param] address | string: user agent of the user
 //
 // [return] string: auth token --> *models.Error: error if any
-func Login(user *models.User, ip string, address string) (string, *models.Error) {
+func Login(user *usersmodels.User, ip string, address string) (string, *models.Error) {
 
 	// Connect database
 	var client = database.Connect()
@@ -144,7 +146,7 @@ func Login(user *models.User, ip string, address string) (string, *models.Error)
 		}
 	}
 
-	device := &models.Device{Address: ip, UserAgent: address}
+	device := &devicemodels.Device{Address: ip, UserAgent: address}
 	device, err := devicedal.AddUserDevice(found, device)
 
 	if err != nil {
@@ -161,20 +163,20 @@ func Login(user *models.User, ip string, address string) (string, *models.Error)
 // Login auth logic
 //
 // [param] auth | models.AuthLogin: auth to login
-func LoginAuth(auth *models.AuthLogin, ip string, userAgent string) *models.Error {
+func LoginAuth(auth *usersmodels.AuthLogin, ip string, userAgent string) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
 	defer database.Disconnect(*client)
 
-	found, err := GetUser(&models.User{Email: auth.Email}, false)
+	found, err := GetUser(&usersmodels.User{Email: auth.Email}, false)
 
 	if err != nil {
 		return err
 	}
 
 	// Search a user device with the same ip and user agent that has the token
-	var filter = models.Device{
+	var filter = devicemodels.Device{
 		User:      found.Email,
 		UserAgent: userAgent,
 		Address:   ip,
@@ -201,7 +203,7 @@ func LoginAuth(auth *models.AuthLogin, ip string, userAgent string) *models.Erro
 // [param] user | models.User: user to edit
 //
 // [return] *models.Error: error if any
-func EditUser(user *models.User) *models.Error {
+func EditUser(user *usersmodels.User) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -392,7 +394,7 @@ func EditUserEmail(mail *EmailChangeRequest) *models.Error {
 // [param] picture | []byte: picture to change
 //
 // [return] *models.Error: error if any
-func EditUserProfilePicture(user *models.User, picture []byte) *models.Error {
+func EditUserProfilePicture(user *usersmodels.User, picture []byte) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -451,7 +453,7 @@ func EditUserProfilePicture(user *models.User, picture []byte) *models.Error {
 // [param] user | models.User: user to delete
 //
 // [return] *models.Error: error if any
-func DeleteUser(user *models.User) *models.Error {
+func DeleteUser(user *usersmodels.User) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -515,14 +517,14 @@ func DeleteUser(user *models.User) *models.Error {
 }
 
 // Get user logic
-func GetUser(user *models.User, secure bool) (*models.User, *models.Error) { // get user from database
+func GetUser(user *usersmodels.User, secure bool) (*usersmodels.User, *models.Error) { // get user from database
 
 	// Connect database
 	var client = database.Connect()
 	defer database.Disconnect(*client)
 
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
-	var found models.User
+	var found usersmodels.User
 	err := users.FindOne(database.GetDefaultContext(), bson.M{"email": user.Email}).Decode(&found)
 
 	if err != nil {
@@ -559,7 +561,7 @@ func ValidateUser(code string) *models.Error {
 		}
 	}
 
-	var user = &models.User{
+	var user = &usersmodels.User{
 		ValidationCode: code,
 	}
 	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
@@ -622,11 +624,11 @@ func ValidateUser(code string) *models.Error {
 //	[param] email | string The email to check
 //
 //	[return] model.User : The user found or empty
-func mailExists(email string, coll *mongo.Collection) *models.User {
+func mailExists(email string, coll *mongo.Collection) *usersmodels.User {
 
 	filter := bson.D{{Key: "email", Value: email}}
 
-	var result models.User
+	var result usersmodels.User
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	if err != nil {
@@ -644,14 +646,14 @@ func mailExists(email string, coll *mongo.Collection) *models.User {
 //	[param] coll | *mongo.Collection : The collection to check
 //
 //	[return] model.User : The user found or empty
-func authorizationOk(email string, password string, coll *mongo.Collection) *models.User {
+func authorizationOk(email string, password string, coll *mongo.Collection) *usersmodels.User {
 
 	filter := bson.D{
 		{Key: "email", Value: email},
 		{Key: "password", Value: utils.EncryptSha256(password)},
 	}
 
-	var result models.User
+	var result usersmodels.User
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	if err != nil {
@@ -667,32 +669,32 @@ func authorizationOk(email string, password string, coll *mongo.Collection) *mod
 //	[param] token | *string : The token to check
 //	[return] tokenUser | *models.User : The user found or empty --> *models.Error: error if any
 //	[return] *models.Error: error if any
-func getUserFromToken(token string) (models.User, *models.Error) {
+func getUserFromToken(token string) (usersmodels.User, *models.Error) {
 
 	// Connect database
 	var client = database.Connect()
 	defer database.Disconnect(*client)
 
-	var tokenDevice models.Device
+	var tokenDevice devicemodels.Device
 
 	devices := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	err := devices.FindOne(database.GetDefaultContext(), bson.M{"token": token}).Decode(&tokenDevice)
 
 	if err != nil {
-		return models.User{}, &models.Error{
+		return usersmodels.User{}, &models.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
 			Error:   valerror.INVALID_TOKEN,
 			Message: "User not matching token",
 		}
 	}
 
-	var tokenUser models.User
+	var tokenUser usersmodels.User
 
 	users := client.Database(database.CurrentDatabase).Collection(database.USER)
 	err = users.FindOne(database.GetDefaultContext(), bson.M{"email": tokenDevice.User}).Decode(&tokenUser)
 
 	if err != nil {
-		return models.User{}, &models.Error{
+		return usersmodels.User{}, &models.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
 			Error:   valerror.INVALID_TOKEN,
 			Message: "User not matching token",
@@ -707,7 +709,7 @@ func getUserFromToken(token string) (models.User, *models.Error) {
 //	[param] token | string : The token to check
 //
 //	[return] bool : True if token is valid --> *models.Error: error if any
-func IsTokenValid(token string) (*models.User, *models.Error) {
+func IsTokenValid(token string) (*usersmodels.User, *models.Error) {
 
 	// decode token
 	claims, err := utils.DecryptToken(token, configuration.Params.Secret)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/akrck02/valhalla-core-dal/mock"
 	devicedal "github.com/akrck02/valhalla-core-dal/services/device"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	devicemodels "github.com/akrck02/valhalla-core-sdk/models/device"
 )
 
 func TestDeviceExists(t *testing.T) {
@@ -34,7 +34,7 @@ func TestDeviceExists(t *testing.T) {
 func TestDeviceNotExists(t *testing.T) {
 
 	user := RegisterMockTestUser(t)
-	device := &models.Device{
+	device := &devicemodels.Device{
 		Token:     mock.Token(),
 		User:      user.Email,
 		Address:   mock.Ip(),

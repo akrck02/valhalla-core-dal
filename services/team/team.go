@@ -4,6 +4,8 @@ import (
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/models"
+	teammodels "github.com/akrck02/valhalla-core-sdk/models/team"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 
@@ -22,7 +24,7 @@ type MemberChangeRequest struct {
 // [param] user | *models.Team: team to create
 //
 // [return] error: *models.Error: error if any
-func CreateTeam(team *models.Team) *models.Error {
+func CreateTeam(team *teammodels.Team) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -120,7 +122,7 @@ func CreateTeam(team *models.Team) *models.Error {
 // [param] team | *models.Team: team to delete
 //
 // [return] error: *models.Error: error if any
-func DeleteTeam(team *models.Team) *models.Error {
+func DeleteTeam(team *teammodels.Team) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -159,7 +161,7 @@ func DeleteTeam(team *models.Team) *models.Error {
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func EditTeam(team *models.Team) *models.Error {
+func EditTeam(team *teammodels.Team) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -207,7 +209,7 @@ func EditTeam(team *models.Team) *models.Error {
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func EditTeamOwner(team *models.Team) *models.Error {
+func EditTeamOwner(team *teammodels.Team) *models.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -327,7 +329,7 @@ func AddMember(member *MemberChangeRequest) *models.Error {
 	}
 
 	// Add member to team FIXME: Not working
-	result, parseErr := coll.UpdateByID(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{"$push": bson.M{"members": member.User}})
+	result, parseErr := coll.UpdateByID(database.GetDefaultContext(), objID, bson.M{"$push": bson.M{"members": member.User}})
 
 	if parseErr != nil {
 		return &models.Error{
@@ -442,7 +444,7 @@ func RemoveMember(member *MemberChangeRequest) *models.Error {
 // [param] user | *models.User: user
 //
 // [return] error: *models.Error: error if any
-func GetTeams(user *models.User) ([]*models.Team, *models.Error) {
+func GetTeams(user *usersmodels.User) ([]*teammodels.Team, *models.Error) {
 
 	// Connect database
 	var client = database.Connect()
@@ -460,10 +462,10 @@ func GetTeams(user *models.User) ([]*models.Team, *models.Error) {
 		}
 	}
 
-	var teams []*models.Team
+	var teams []*teammodels.Team
 
 	for teamsCursor.Next(database.GetDefaultContext()) {
-		var team models.Team
+		var team teammodels.Team
 		err := teamsCursor.Decode(&team)
 		if err != nil {
 			return nil, &models.Error{
@@ -485,7 +487,7 @@ func GetTeams(user *models.User) ([]*models.Team, *models.Error) {
 // [param] team | *models.Team: team to edit
 //
 // [return] error: *models.Error: error if any
-func GetTeam(team *models.Team) (*models.Team, *models.Error) {
+func GetTeam(team *teammodels.Team) (*teammodels.Team, *models.Error) {
 
 	// Connect database
 	var client = database.Connect()
@@ -502,7 +504,7 @@ func GetTeam(team *models.Team) (*models.Team, *models.Error) {
 	}
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
-	var foundTeam models.Team
+	var foundTeam teammodels.Team
 
 	err2 := coll.FindOne(database.GetDefaultContext(), bson.M{"_id": objID}).Decode(&foundTeam)
 
@@ -522,9 +524,9 @@ func GetTeam(team *models.Team) (*models.Team, *models.Error) {
 // [param] searchText | *string: text to search
 //
 // [return] error: *models.Error: error if any
-func SearchTeams(searchText *string) (*[]models.Team, *models.Error) {
+func SearchTeams(searchText *string) (*[]teammodels.Team, *models.Error) {
 
-	foundTeams := []models.Team{}
+	foundTeams := []teammodels.Team{}
 
 	return &foundTeams, nil
 
@@ -537,7 +539,7 @@ func userExists(user string) *models.Error {
 	defer database.Disconnect(*client)
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
-	var foundUser models.User
+	var foundUser usersmodels.User
 
 	objID, err1 := utils.StringToObjectId(user)
 
@@ -562,13 +564,13 @@ func userExists(user string) *models.Error {
 	return nil
 }
 
-func teamExists(coll *mongo.Collection, team *models.Team) models.Team {
+func teamExists(coll *mongo.Collection, team *teammodels.Team) teammodels.Team {
 
 	filter := bson.D{
 		{Key: "name", Value: team.Name},
 		{Key: "owner", Value: team.Owner},
 	}
-	var result models.Team
+	var result teammodels.Team
 
 	coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
@@ -593,7 +595,7 @@ func isUserMemberOrOwner(request *MemberChangeRequest) bool {
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	var result models.Team
+	var result teammodels.Team
 
 	err := coll.FindOne(database.GetDefaultContext(), filterMember).Decode(&result)
 
@@ -623,7 +625,7 @@ func isMember(request *MemberChangeRequest) bool {
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	var result models.Team
+	var result teammodels.Team
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 	return err != nil
 }
@@ -641,7 +643,7 @@ func isOwner(request *MemberChangeRequest) bool {
 
 	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	var result models.Team
+	var result teammodels.Team
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 	return err != nil
 }

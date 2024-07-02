@@ -2,7 +2,8 @@ package mock
 
 import (
 	"github.com/akrck02/valhalla-core-dal/configuration"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	devicemodels "github.com/akrck02/valhalla-core-sdk/models/device"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 )
 
@@ -17,7 +18,7 @@ func Platform() string {
 func Token() string {
 
 	// Create a user
-	var user = &models.User{
+	var user = &usersmodels.User{
 		Username: "#TOKENHASH#",
 		Password: "#T0K3NH4SHToKeNHaSH#",
 		Email:    "TokenHash@tokenHash.com",
@@ -25,7 +26,7 @@ func Token() string {
 
 	// Create a device
 
-	var device = &models.Device{
+	var device = &devicemodels.Device{
 		UserAgent: "Firefox, Linux",
 		Address:   "0.0.0.0",
 	}

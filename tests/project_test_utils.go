@@ -6,17 +6,18 @@ import (
 	"github.com/akrck02/valhalla-core-dal/mock"
 	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
 	"github.com/akrck02/valhalla-core-sdk/log"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 )
 
 // CreateMockTestProject creates a project for testing purposes
 //
 // [param] t | *testing.T: Testing object
 //
-// [return] models.Project: Created project
-func CreateMockTestProjectWithUser(t *testing.T, user *models.User) *models.Project {
+// [return] projectmodels.Project: Created project
+func CreateMockTestProjectWithUser(t *testing.T, user *usersmodels.User) *projectmodels.Project {
 
-	project := &models.Project{
+	project := &projectmodels.Project{
 		Name:        mock.ProjectName(),
 		Description: mock.ProjectDescription(),
 		Owner:       user.Email,
@@ -28,10 +29,10 @@ func CreateMockTestProjectWithUser(t *testing.T, user *models.User) *models.Proj
 // CreateTestProject creates a project for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] project | *models.Project: Project to create
+// [param] project | *projectmodels.Project: Project to create
 //
 // [return] *models.Project: Created project
-func CreateTestProjectWithUser(t *testing.T, project *models.Project, user *models.User) *models.Project {
+func CreateTestProjectWithUser(t *testing.T, project *projectmodels.Project, user *usersmodels.User) *projectmodels.Project {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
 	err := projectdal.CreateProject(project)
@@ -48,7 +49,7 @@ func CreateTestProjectWithUser(t *testing.T, project *models.Project, user *mode
 // CreateTestProjectWithoutOwner creates a project without an owner for testing purposes
 //
 // [param] t | *testing.T: Testing object
-func CreateTestProjectWithError(t *testing.T, project *models.Project, status int, errorcode int) {
+func CreateTestProjectWithError(t *testing.T, project *projectmodels.Project, status int, errorcode int) {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
 	err := projectdal.CreateProject(project)
@@ -70,8 +71,8 @@ func CreateTestProjectWithError(t *testing.T, project *models.Project, status in
 // DeleteTestProject deletes a project for testing purposes
 //
 // [param] t | *testing.T: Testing object
-// [param] project | *models.Project: Project to delete
-func DeleteTestProject(t *testing.T, project *models.Project) {
+// [param] project | *projectmodels.Project: Project to delete
+func DeleteTestProject(t *testing.T, project *projectmodels.Project) {
 
 	log.FormattedInfo("Deleting project: ${0}", project.Name)
 	err := projectdal.DeleteProject(project)
