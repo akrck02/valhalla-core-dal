@@ -24,11 +24,7 @@ type EmailChangeRequest struct {
 	NewEmail string `json:"new_email"`
 }
 
-func Register(user *usersmodels.User) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 
 	if utils.IsEmpty(user.Email) {
 		return &systemmodels.Error{
@@ -74,8 +70,8 @@ func Register(user *usersmodels.User) *systemmodels.Error {
 		}
 	}
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
-	found := mailExists(user.Email, coll)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
+	found := mailExists(conn, user.Email, coll)
 
 	if found != nil {
 
@@ -116,15 +112,13 @@ func Register(user *usersmodels.User) *systemmodels.Error {
 	return nil
 }
 
-func Login(user *usersmodels.User, ip string, address string) (string, *systemmodels.Error) {
+func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string) (string, *systemmodels.Error) {
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	log.Info("Password: " + user.Password)
-	found := authorizationOk(user.Email, user.Clone().Password, coll)
+	found := authorizationOk(conn, user.Email, user.Clone().Password, coll)
 
 	if found == nil {
 		return "", &systemmodels.Error{
@@ -148,13 +142,11 @@ func Login(user *usersmodels.User, ip string, address string) (string, *systemmo
 	return device.Token, nil
 }
 
-func LoginAuth(auth *usersmodels.AuthLogin, ip string, userAgent string) *systemmodels.Error {
+func LoginAuth(conn *mongo.Client, auth *usersmodels.AuthLogin, ip string, userAgent string) *systemmodels.Error {
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
-	found, err := GetUser(&usersmodels.User{Email: auth.Email}, false)
+	found, err := GetUser(conn, &usersmodels.User{Email: auth.Email}, false)
 
 	if err != nil {
 		return err
@@ -168,7 +160,7 @@ func LoginAuth(auth *usersmodels.AuthLogin, ip string, userAgent string) *system
 		Token:     auth.AuthToken,
 	}
 
-	var devices = client.Database(database.CurrentDatabase).Collection(database.DEVICE)
+	var devices = conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	device, deviceFindingError := devicedal.FindDeviceByAuthToken(devices, &filter)
 
 	if deviceFindingError != nil || device == nil {
@@ -182,13 +174,11 @@ func LoginAuth(auth *usersmodels.AuthLogin, ip string, userAgent string) *system
 	return nil
 }
 
-func EditUser(user *usersmodels.User) *systemmodels.Error {
+func EditUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
-	users := client.Database(database.CurrentDatabase).Collection(database.USER)
+	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
 
 	// validate email
 	if user.Email != "" {
@@ -256,11 +246,9 @@ func EditUser(user *usersmodels.User) *systemmodels.Error {
 	return nil
 }
 
-func EditUserEmail(mail *EmailChangeRequest) *systemmodels.Error {
+func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.Error {
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(mail.Email) || utils.IsEmpty(mail.NewEmail) {
 		return &systemmodels.Error{
@@ -290,8 +278,8 @@ func EditUserEmail(mail *EmailChangeRequest) *systemmodels.Error {
 	}
 
 	// Check if user exists
-	users := client.Database(database.CurrentDatabase).Collection(database.USER)
-	found := mailExists(mail.NewEmail, users)
+	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
+	found := mailExists(conn, mail.NewEmail, users)
 
 	if found != nil {
 		return &systemmodels.Error{
@@ -339,7 +327,7 @@ func EditUserEmail(mail *EmailChangeRequest) *systemmodels.Error {
 	}
 
 	// update user devices on database
-	devices := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
+	devices := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 
 	updateStatus, err = devices.UpdateMany(database.GetDefaultContext(), bson.M{"user": mail.Email}, bson.M{"$set": bson.M{"user": mail.NewEmail}})
 
@@ -362,11 +350,9 @@ func EditUserEmail(mail *EmailChangeRequest) *systemmodels.Error {
 	return nil
 }
 
-func EditUserProfilePicture(user *usersmodels.User, picture []byte) *systemmodels.Error {
+func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture []byte) *systemmodels.Error {
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(user.Email) {
 		return &systemmodels.Error{
@@ -403,7 +389,7 @@ func EditUserProfilePicture(user *usersmodels.User, picture []byte) *systemmodel
 	}
 
 	user.ProfilePic = profilePicPath
-	editErr := EditUser(user)
+	editErr := EditUser(conn, user)
 
 	if editErr != nil {
 		return &systemmodels.Error{
@@ -416,11 +402,9 @@ func EditUserProfilePicture(user *usersmodels.User, picture []byte) *systemmodel
 	return nil
 }
 
-func DeleteUser(user *usersmodels.User) *systemmodels.Error {
+func DeleteUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(user.Email) {
 		return &systemmodels.Error{
@@ -431,7 +415,7 @@ func DeleteUser(user *usersmodels.User) *systemmodels.Error {
 	}
 
 	// delete user projects
-	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
+	projects := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
 	_, err := projects.DeleteMany(database.GetDefaultContext(), bson.M{"owner": user.Email})
 
 	if err != nil {
@@ -443,7 +427,7 @@ func DeleteUser(user *usersmodels.User) *systemmodels.Error {
 	}
 
 	// delete user devices
-	devices := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
+	devices := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	_, err = devices.DeleteMany(database.GetDefaultContext(), bson.M{"user": user.Email})
 
 	if err != nil {
@@ -455,7 +439,7 @@ func DeleteUser(user *usersmodels.User) *systemmodels.Error {
 	}
 
 	// delete user on database
-	users := client.Database(database.CurrentDatabase).Collection(database.USER)
+	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
 
 	var deleteResult *mongo.DeleteResult
 	deleteResult, err = users.DeleteOne(database.GetDefaultContext(), bson.M{"email": user.Email})
@@ -479,13 +463,11 @@ func DeleteUser(user *usersmodels.User) *systemmodels.Error {
 	return nil
 }
 
-func GetUser(user *usersmodels.User, secure bool) (*usersmodels.User, *systemmodels.Error) { // get user from database
+func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmodels.User, *systemmodels.Error) { // get user from database
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
-	users := client.Database(database.CurrentDatabase).Collection(database.USER)
+	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	var found usersmodels.User
 	err := users.FindOne(database.GetDefaultContext(), bson.M{"email": user.Email}).Decode(&found)
 
@@ -504,11 +486,9 @@ func GetUser(user *usersmodels.User, secure bool) (*usersmodels.User, *systemmod
 	return &found, nil
 }
 
-func ValidateUser(code string) *systemmodels.Error {
+func ValidateUser(conn *mongo.Client, code string) *systemmodels.Error {
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(code) {
 		return &systemmodels.Error{
@@ -521,7 +501,7 @@ func ValidateUser(code string) *systemmodels.Error {
 	var user = &usersmodels.User{
 		ValidationCode: code,
 	}
-	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	err := coll.FindOne(database.GetDefaultContext(), user).Decode(user)
 
 	log.FormattedInfo("user: ${0}", user.Email)
@@ -576,7 +556,7 @@ func ValidateUser(code string) *systemmodels.Error {
 	return nil
 }
 
-func mailExists(email string, coll *mongo.Collection) *usersmodels.User {
+func mailExists(conn *mongo.Client, email string, coll *mongo.Collection) *usersmodels.User {
 
 	filter := bson.D{{Key: "email", Value: email}}
 
@@ -591,7 +571,7 @@ func mailExists(email string, coll *mongo.Collection) *usersmodels.User {
 	return &result
 }
 
-func authorizationOk(email string, password string, coll *mongo.Collection) *usersmodels.User {
+func authorizationOk(conn *mongo.Client, email string, password string, coll *mongo.Collection) *usersmodels.User {
 
 	filter := bson.D{
 		{Key: "email", Value: email},
@@ -609,15 +589,13 @@ func authorizationOk(email string, password string, coll *mongo.Collection) *use
 	return &result
 }
 
-func getUserFromToken(token string) (usersmodels.User, *systemmodels.Error) {
+func getUserFromToken(conn *mongo.Client, token string) (usersmodels.User, *systemmodels.Error) {
 
 	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
 
 	var tokenDevice devicemodels.Device
 
-	devices := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
+	devices := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	err := devices.FindOne(database.GetDefaultContext(), bson.M{"token": token}).Decode(&tokenDevice)
 
 	if err != nil {
@@ -630,7 +608,7 @@ func getUserFromToken(token string) (usersmodels.User, *systemmodels.Error) {
 
 	var tokenUser usersmodels.User
 
-	users := client.Database(database.CurrentDatabase).Collection(database.USER)
+	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	err = users.FindOne(database.GetDefaultContext(), bson.M{"email": tokenDevice.User}).Decode(&tokenUser)
 
 	if err != nil {
@@ -644,7 +622,7 @@ func getUserFromToken(token string) (usersmodels.User, *systemmodels.Error) {
 	return tokenUser, nil
 }
 
-func IsTokenValid(token string) (*usersmodels.User, *systemmodels.Error) {
+func IsTokenValid(conn *mongo.Client, token string) (*usersmodels.User, *systemmodels.Error) {
 
 	// decode token
 	claims, err := utils.DecryptToken(token, configuration.Params.Secret)
@@ -664,7 +642,7 @@ func IsTokenValid(token string) (*usersmodels.User, *systemmodels.Error) {
 
 	email := claims.Claims.(jwt.MapClaims)["email"].(string)
 
-	foundUser, tokenUserErr := getUserFromToken(token)
+	foundUser, tokenUserErr := getUserFromToken(conn, token)
 
 	if tokenUserErr != nil {
 		return nil, &systemmodels.Error{
