@@ -5,7 +5,7 @@ go 1.22
 toolchain go1.22.3
 
 require (
-	github.com/akrck02/valhalla-core-sdk v0.0.11-20240702235716-feature-teams
+	github.com/akrck02/valhalla-core-sdk v0.0.11-20240709205701-dev
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/joho/godotenv v1.5.1
 	go.mongodb.org/mongo-driver v1.15.0
