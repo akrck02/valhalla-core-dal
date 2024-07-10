@@ -10,6 +10,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    environment: dev 
     strategy:
       matrix:
         go-version: [ '1.21', '1.22.x' ]
