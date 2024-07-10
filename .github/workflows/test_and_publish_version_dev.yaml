@@ -60,7 +60,7 @@ jobs:
         mongodb-port: 27017
     
     - name: Create env file
-      run: echo "MONGO_SERVER=127.0.0.1 \nMONGO_PASSWORD=test \nMONGO_PORT=27017 \nENV=development \nSECRET=secret" > .env
+      run: echo "" > .env
     
     - name: Run tests 
       run: go test -v ./...
