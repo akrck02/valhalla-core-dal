@@ -54,8 +54,8 @@ jobs:
     - name: Set database running
       uses: supercharge/mongodb-github-action@1.9.0
       with:
-        mongodb-username: supertestuser3000
-        mongodb-password: Sup3rt3stP4ssw0rd
+        mongodb-username: admin
+        mongodb-password: p4ssw0rd
         mongodb-db: valhalla-test
         mongodb-port: 27017
     
