@@ -129,7 +129,7 @@ func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string
 	}
 
 	device := &devicemodels.Device{Address: ip, UserAgent: address}
-	device, err := devicedal.AddUserDevice(found, device)
+	device, err := devicedal.AddUserDevice(conn, found, device)
 
 	if err != nil {
 		return "", &systemmodels.Error{

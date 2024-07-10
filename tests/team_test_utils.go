@@ -7,15 +7,10 @@ import (
 	teamdal "github.com/akrck02/valhalla-core-dal/services/team"
 	teammodels "github.com/akrck02/valhalla-core-sdk/models/team"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// CreateMockTestTeam creates a team for testing purposes
-// with the given user as owner
-//
-// [param] t | *testing.T: Testing object
-//
-// [return] teammodels.Team: Created team
-func CreateMockTestTeamWithOwner(t *testing.T, owner *usersmodels.User) *teammodels.Team {
+func CreateMockTestTeamWithOwner(conn *mongo.Client, t *testing.T, owner *usersmodels.User) *teammodels.Team {
 
 	team := &teammodels.Team{
 		Name:        mock.TeamName(),
@@ -23,18 +18,12 @@ func CreateMockTestTeamWithOwner(t *testing.T, owner *usersmodels.User) *teammod
 		Owner:       owner.ID,
 	}
 
-	return CreateTestTeam(t, team)
+	return CreateTestTeam(conn, t, team)
 }
 
-// Creates a team for testing purposes
-//
-// [param] t | *testing.T: Testing object
-// [param] team | *teammodels.Team: Team to create
-//
-// [return] *teammodels.Team: Created team
-func CreateTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
+func CreateTestTeam(conn *mongo.Client, t *testing.T, team *teammodels.Team) *teammodels.Team {
 
-	err := teamdal.CreateTeam(team)
+	err := teamdal.CreateTeam(conn, team)
 
 	if err != nil {
 		t.Errorf("Error creating team: %v", err)
@@ -45,15 +34,9 @@ func CreateTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
 	return team
 }
 
-// Gets a team for testing purposes
-//
-// [param] t | *testing.T: Testing object
-// [param] team | *teammodels.Team: Team to get
-//
-// [return] *teammodels.Team: Got team
-func GetTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
+func GetTestTeam(conn *mongo.Client, t *testing.T, team *teammodels.Team) *teammodels.Team {
 
-	getTeam, err := teamdal.GetTeam(team)
+	getTeam, err := teamdal.GetTeam(conn, team)
 
 	if err != nil {
 		t.Errorf("Error getting team: %v", err)
@@ -63,18 +46,12 @@ func GetTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
 	return getTeam
 }
 
-// Edits a team for testing purposes
-//
-// [param] t | *testing.T: Testing object
-// [param] team | *teammodels.Team: Team to edit
-//
-// [return] team | *teammodels.Team: Edited team
-func EditTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
+func EditTestTeam(conn *mongo.Client, t *testing.T, team *teammodels.Team) *teammodels.Team {
 
 	team.Name = mock.TeamNameLong()
 	team.Description = mock.TeamDescriptionLong()
 
-	err := teamdal.EditTeam(team)
+	err := teamdal.EditTeam(conn, team)
 
 	if err != nil {
 		t.Errorf("Error editing team: %v", err)
@@ -85,13 +62,9 @@ func EditTestTeam(t *testing.T, team *teammodels.Team) *teammodels.Team {
 	return team
 }
 
-// Deletes a team for testing purposes
-//
-// [param] t | *testing.T: Testing object
-// [param] team | *teammodels.Team: Team to delete
-func DeleteTestTeam(t *testing.T, team *teammodels.Team) {
+func DeleteTestTeam(conn *mongo.Client, t *testing.T, team *teammodels.Team) {
 
-	err := teamdal.DeleteTeam(team)
+	err := teamdal.DeleteTeam(conn, team)
 
 	if err != nil {
 		t.Errorf("Error deleting team: %v", err)
@@ -101,16 +74,10 @@ func DeleteTestTeam(t *testing.T, team *teammodels.Team) {
 	t.Log("Team deleted successfully")
 }
 
-// Adds a team member for testing purposes
-//
-// [param] t | *testing.T: Testing object
-// [param] team | *teammodels.Team: Team to add member to
-// [param] user | *usersmodels.User: User to add to team
-//
-// [return] *teammodels.Team: Team with added member
-func AddTestTeamMember(t *testing.T, team *teammodels.Team, user *usersmodels.User) *teammodels.Team {
+func AddTestTeamMember(conn *mongo.Client, t *testing.T, team *teammodels.Team, user *usersmodels.User) *teammodels.Team {
 
 	err := teamdal.AddMember(
+		conn,
 		&teamdal.MemberChangeRequest{
 			Team: team.ID,
 			User: user.ID,

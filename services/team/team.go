@@ -19,11 +19,7 @@ type MemberChangeRequest struct {
 	User string `json:"userid"`
 }
 
-func CreateTeam(team *teammodels.Team) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Check if team name is empty
 	if utils.IsEmpty(team.Name) {
@@ -66,7 +62,7 @@ func CreateTeam(team *teammodels.Team) *systemmodels.Error {
 	}
 
 	// Check if owner exists
-	err1 := userExists(team.Owner)
+	err1 := userExists(conn, team.Owner)
 
 	if err1 != nil {
 		return err1
@@ -82,7 +78,7 @@ func CreateTeam(team *teammodels.Team) *systemmodels.Error {
 	}
 
 	// Check if team already exists
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
 	found := teamExists(coll, team)
 
@@ -112,11 +108,7 @@ func CreateTeam(team *teammodels.Team) *systemmodels.Error {
 	return nil
 }
 
-func DeleteTeam(team *teammodels.Team) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func DeleteTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
@@ -131,7 +123,7 @@ func DeleteTeam(team *teammodels.Team) *systemmodels.Error {
 	}
 
 	// Delete team
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 	_, err = coll.DeleteOne(database.GetDefaultContext(), bson.M{"_id": objID})
 
 	// Check if team was deleted
@@ -146,11 +138,7 @@ func DeleteTeam(team *teammodels.Team) *systemmodels.Error {
 	return nil
 }
 
-func EditTeam(team *teammodels.Team) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func EditTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
@@ -164,7 +152,7 @@ func EditTeam(team *teammodels.Team) *systemmodels.Error {
 		}
 	}
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
 	_, err = coll.UpdateOne(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{
 		"$set": bson.M{
@@ -189,11 +177,7 @@ func EditTeam(team *teammodels.Team) *systemmodels.Error {
 	return nil
 }
 
-func EditTeamOwner(team *teammodels.Team) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func EditTeamOwner(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Check if team owner is empty
 	if utils.IsEmpty(team.Owner) {
@@ -217,14 +201,14 @@ func EditTeamOwner(team *teammodels.Team) *systemmodels.Error {
 	}
 
 	// Check if owner exists
-	err2 := userExists(team.Owner)
+	err2 := userExists(conn, team.Owner)
 
 	if err2 != nil {
 		return err2
 	}
 
 	// Update owner
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
 	result := coll.FindOneAndUpdate(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{
 		"$set": bson.M{
@@ -249,11 +233,7 @@ func EditTeamOwner(team *teammodels.Team) *systemmodels.Error {
 	return nil
 }
 
-func AddMember(member *MemberChangeRequest) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func AddMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Error {
 
 	// Check if member is empty
 	if utils.IsEmpty(member.User) {
@@ -274,7 +254,7 @@ func AddMember(member *MemberChangeRequest) *systemmodels.Error {
 	}
 
 	// Check if member exists
-	err := userExists(member.User)
+	err := userExists(conn, member.User)
 
 	if err != nil {
 		return err
@@ -293,9 +273,9 @@ func AddMember(member *MemberChangeRequest) *systemmodels.Error {
 	}
 
 	// Check if member is already in team or is owner
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
-	if isUserMemberOrOwner(member) {
+	if isUserMemberOrOwner(conn, member) {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.USER_ALREADY_MEMBER,
@@ -326,11 +306,7 @@ func AddMember(member *MemberChangeRequest) *systemmodels.Error {
 	return nil
 }
 
-func RemoveMember(member *MemberChangeRequest) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Error {
 
 	// Check if member is empty
 	if utils.IsEmpty(member.User) {
@@ -363,14 +339,14 @@ func RemoveMember(member *MemberChangeRequest) *systemmodels.Error {
 	}
 
 	// Check if member exists
-	err := userExists(member.User)
+	err := userExists(conn, member.User)
 
 	if err != nil {
 		return err
 	}
 
 	// deleting team owner is not allowed
-	if isOwner(member) {
+	if isOwner(conn, member) {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.CANNOT_DELETE_TEAM_OWNER,
@@ -379,7 +355,7 @@ func RemoveMember(member *MemberChangeRequest) *systemmodels.Error {
 	}
 
 	// Check if member is in team
-	if !isMember(member) {
+	if !isMember(conn, member) {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.USER_NOT_MEMBER_OF_THE_TEAM,
@@ -388,7 +364,7 @@ func RemoveMember(member *MemberChangeRequest) *systemmodels.Error {
 	}
 
 	// Remove member from team
-	result, parseErr := client.Database(database.CurrentDatabase).Collection(database.TEAM).UpdateByID(database.GetDefaultContext(), objID, bson.M{"$pull": bson.M{"members": member.User}})
+	result, parseErr := conn.Database(database.CurrentDatabase).Collection(database.TEAM).UpdateByID(database.GetDefaultContext(), objID, bson.M{"$pull": bson.M{"members": member.User}})
 	if parseErr != nil {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
@@ -409,14 +385,10 @@ func RemoveMember(member *MemberChangeRequest) *systemmodels.Error {
 	return nil
 }
 
-func GetTeams(user *usersmodels.User) ([]*teammodels.Team, *systemmodels.Error) {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func GetTeams(conn *mongo.Client, user *usersmodels.User) ([]*teammodels.Team, *systemmodels.Error) {
 
 	// Get the teams that the user owns
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 	teamsCursor, err := coll.Find(database.GetDefaultContext(), bson.M{"owner": user.ID})
 
 	if err != nil {
@@ -447,11 +419,7 @@ func GetTeams(user *usersmodels.User) ([]*teammodels.Team, *systemmodels.Error) 
 	return teams, nil
 }
 
-func GetTeam(team *teammodels.Team) (*teammodels.Team, *systemmodels.Error) {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func GetTeam(conn *mongo.Client, team *teammodels.Team) (*teammodels.Team, *systemmodels.Error) {
 
 	objID, err1 := utils.StringToObjectId(team.ID)
 
@@ -463,7 +431,7 @@ func GetTeam(team *teammodels.Team) (*teammodels.Team, *systemmodels.Error) {
 		}
 	}
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 	var foundTeam teammodels.Team
 
 	err2 := coll.FindOne(database.GetDefaultContext(), bson.M{"_id": objID}).Decode(&foundTeam)
@@ -482,18 +450,13 @@ func GetTeam(team *teammodels.Team) (*teammodels.Team, *systemmodels.Error) {
 func SearchTeams(searchText *string) (*[]teammodels.Team, *systemmodels.Error) {
 
 	foundTeams := []teammodels.Team{}
-
 	return &foundTeams, nil
 
 }
 
-func userExists(user string) *systemmodels.Error {
+func userExists(conn *mongo.Client, user string) *systemmodels.Error {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
-
-	coll := client.Database(database.CurrentDatabase).Collection(database.USER)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	var foundUser usersmodels.User
 
 	objID, err1 := utils.StringToObjectId(user)
@@ -532,11 +495,7 @@ func teamExists(coll *mongo.Collection, team *teammodels.Team) teammodels.Team {
 	return result
 }
 
-func isUserMemberOrOwner(request *MemberChangeRequest) bool {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func isUserMemberOrOwner(conn *mongo.Client, request *MemberChangeRequest) bool {
 
 	filterMember := bson.D{
 		{Key: "_id", Value: request.Team},
@@ -548,7 +507,7 @@ func isUserMemberOrOwner(request *MemberChangeRequest) bool {
 		{Key: "owner", Value: request.User},
 	}
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
 	var result teammodels.Team
 
@@ -567,36 +526,28 @@ func isUserMemberOrOwner(request *MemberChangeRequest) bool {
 	return false
 }
 
-func isMember(request *MemberChangeRequest) bool {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func isMember(conn *mongo.Client, request *MemberChangeRequest) bool {
 
 	filter := bson.D{
 		{Key: "_id", Value: request.Team},
 		{Key: "members", Value: bson.D{{Key: "$all", Value: bson.A{request.User}}}},
 	}
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
 	var result teammodels.Team
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 	return err != nil
 }
 
-func isOwner(request *MemberChangeRequest) bool {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func isOwner(conn *mongo.Client, request *MemberChangeRequest) bool {
 
 	filter := bson.D{
 		{Key: "_id", Value: request.Team},
 		{Key: "owner", Value: request.User},
 	}
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.TEAM)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
 	var result teammodels.Team
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)

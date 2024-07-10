@@ -12,11 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func CreateProject(project *projectmodels.Project) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
 
 	if utils.IsEmpty(project.Name) {
 		return &systemmodels.Error{
@@ -42,7 +38,7 @@ func CreateProject(project *projectmodels.Project) *systemmodels.Error {
 		}
 	}
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
 	found := nameExists(coll, project.Name, project.Owner)
 
 	if found {
@@ -66,12 +62,12 @@ func CreateProject(project *projectmodels.Project) *systemmodels.Error {
 	return nil
 }
 
-func EditProject(project *projectmodels.Project) *systemmodels.Error {
+func EditProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
 
 	return nil
 }
 
-func DeleteProject(project *projectmodels.Project) *systemmodels.Error {
+func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
@@ -121,7 +117,7 @@ func DeleteProject(project *projectmodels.Project) *systemmodels.Error {
 	return nil
 }
 
-func GetProject(project *projectmodels.Project) (*projectmodels.Project, *systemmodels.Error) {
+func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmodels.Project, *systemmodels.Error) {
 
 	// Connect database
 	var client = database.Connect()
@@ -143,18 +139,11 @@ func GetProject(project *projectmodels.Project) (*projectmodels.Project, *system
 	return &found, nil
 }
 
-func GetUserProjects(email string) []projectmodels.Project {
+func GetUserProjects(conn *mongo.Client, email string) []projectmodels.Project {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
-
-	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
-
+	projects := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
 	filter := bson.M{"owner": email}
-
 	cursor, err := projects.Find(database.GetDefaultContext(), filter)
-
 	if err != nil {
 		return nil
 	}
