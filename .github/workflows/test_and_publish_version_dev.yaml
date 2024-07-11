@@ -9,6 +9,7 @@ on:
   
 jobs:
   test:
+    environment: Development
     runs-on: ubuntu-latest
     strategy:
       matrix:
