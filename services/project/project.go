@@ -3,7 +3,8 @@ package projectdal
 import (
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-sdk/http"
-	"github.com/akrck02/valhalla-core-sdk/models"
+	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
+	systemmodels "github.com/akrck02/valhalla-core-sdk/models/system"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 
@@ -11,19 +12,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// Create project logic
-//
-// [param] project | models.Project : The project to create
-//
-// [return] *models.Error : The error
-func CreateProject(project *models.Project) *models.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
 
 	if utils.IsEmpty(project.Name) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_PROJECT_NAME,
 			Message: "Project name cannot be empty",
@@ -31,7 +23,7 @@ func CreateProject(project *models.Project) *models.Error {
 	}
 
 	if utils.IsEmpty(project.Description) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_PROJECT_DESCRIPTION,
 			Message: "Project description cannot be empty",
@@ -39,18 +31,18 @@ func CreateProject(project *models.Project) *models.Error {
 	}
 
 	if utils.IsEmpty(project.Owner) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_PROJECT_OWNER,
 			Message: "Owner cannot be empty",
 		}
 	}
 
-	coll := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
 	found := nameExists(coll, project.Name, project.Owner)
 
 	if found {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_CONFLICT,
 			Error:   valerror.PROJECT_ALREADY_EXISTS,
 			Message: "Project already exists",
@@ -60,7 +52,7 @@ func CreateProject(project *models.Project) *models.Error {
 	_, err := coll.InsertOne(database.GetDefaultContext(), project)
 
 	if err != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.PROJECT_ALREADY_EXISTS,
 			Message: "Project already exists",
@@ -70,29 +62,19 @@ func CreateProject(project *models.Project) *models.Error {
 	return nil
 }
 
-// Edit project logic
-//
-// [param] project | models.Project : The project to edit
-//
-// [return] *models.Error : The error
-func EditProject(project *models.Project) *models.Error {
+func EditProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
 
 	return nil
 }
 
-// Delete project logic
-//
-// [param] project | models.Project : The project to delete
-//
-// [return] *models.Error : The error
-func DeleteProject(project *models.Project) *models.Error {
+func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
 
 	// Connect database
 	var client = database.Connect()
 	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(project.Name) {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_PROJECT_NAME,
 			Message: "Project name cannot be empty",
@@ -104,7 +86,7 @@ func DeleteProject(project *models.Project) *models.Error {
 	_, err := devices.DeleteMany(database.GetDefaultContext(), bson.M{"project": project.Name})
 
 	if err != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.PROJECT_NOT_DELETED,
 			Message: "Project not deleted",
@@ -117,7 +99,7 @@ func DeleteProject(project *models.Project) *models.Error {
 	deleteResult, err = projects.DeleteOne(database.GetDefaultContext(), bson.M{"name": project.Name})
 
 	if err != nil {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.PROJECT_NOT_DELETED,
 			Message: "Project not deleted",
@@ -125,7 +107,7 @@ func DeleteProject(project *models.Project) *models.Error {
 	}
 
 	if deleteResult.DeletedCount == 0 {
-		return &models.Error{
+		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.PROJECT_NOT_FOUND,
 			Message: "Project not found",
@@ -135,12 +117,7 @@ func DeleteProject(project *models.Project) *models.Error {
 	return nil
 }
 
-// Get project logic
-//
-// [param] project | models.Project : The project to get
-//
-// [return] *models.Error : The error
-func GetProject(project *models.Project) (*models.Project, *models.Error) { // get project from database
+func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmodels.Project, *systemmodels.Error) {
 
 	// Connect database
 	var client = database.Connect()
@@ -148,11 +125,11 @@ func GetProject(project *models.Project) (*models.Project, *models.Error) { // g
 
 	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
 
-	found := models.Project{}
+	found := projectmodels.Project{}
 	err := projects.FindOne(database.GetDefaultContext(), bson.M{"name": project.Name}).Decode(&found)
 
 	if err != nil {
-		return nil, &models.Error{
+		return nil, &systemmodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.PROJECT_NOT_FOUND,
 			Message: "Project not found",
@@ -162,44 +139,25 @@ func GetProject(project *models.Project) (*models.Project, *models.Error) { // g
 	return &found, nil
 }
 
-// Get all projects by user logic
-//
-// [param] email | string : The email of the user
-//
-// [return] []models.Project : The projects of the user
-func GetUserProjects(email string) []models.Project {
+func GetUserProjects(conn *mongo.Client, email string) []projectmodels.Project {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
-
-	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
-
+	projects := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
 	filter := bson.M{"owner": email}
-
 	cursor, err := projects.Find(database.GetDefaultContext(), filter)
-
 	if err != nil {
 		return nil
 	}
 
-	var result []models.Project
+	var result []projectmodels.Project
 	cursor.All(database.GetDefaultContext(), &result)
 
 	return result
 }
 
-// Check if project name exists
-//
-// [param] coll | *mongo.Collection : The mongo collection
-// [param] name | string : The name of the project
-// [param] owner | string : The owner of the project
-//
-// [return] models.Project : The project found
 func nameExists(coll *mongo.Collection, name string, owner string) bool {
 	filter := bson.M{"name": name, "owner": owner}
 
-	var result *models.Project
+	var result *projectmodels.Project
 	coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	return result != nil

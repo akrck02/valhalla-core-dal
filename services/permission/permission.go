@@ -1,15 +1,18 @@
 package permissiondal
 
-import "github.com/akrck02/valhalla-core-sdk/models"
+import (
+	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
+)
 
-func CanEditUser(author *models.User, user *models.User) bool {
+func CanEditUser(author *usersmodels.User, user *usersmodels.User) bool {
 	return author.Email == user.Email
 }
 
-func CanSeeUser(author *models.User, user *models.User) bool {
+func CanSeeUser(author *usersmodels.User, user *usersmodels.User) bool {
 	return author.Email == user.Email
 }
-func CanDeleteProject(logedUser *models.User, project *models.Project) bool {
+func CanDeleteProject(logedUser *usersmodels.User, project *projectmodels.Project) bool {
 	return logedUser.ID == project.Owner
 }
 

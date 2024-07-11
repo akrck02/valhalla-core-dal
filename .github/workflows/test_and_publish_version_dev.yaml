@@ -9,6 +9,7 @@ on:
   
 jobs:
   test:
+    environment: Development
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -60,8 +61,8 @@ jobs:
         mongodb-port: 27017
     
     - name: Create env file
-      run: echo "IP=127.0.0.1 \n PORT=3333 \n SECRET=secret \n GIN_MODE=release \n IP_MONGODB=172.0.0.1" > .env
-    
+      run: cp test.env .env
+
     - name: Run tests 
       run: go test -v ./...
 

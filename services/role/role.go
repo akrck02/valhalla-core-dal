@@ -1,25 +1,26 @@
 package roledal
 
 import (
-	"github.com/akrck02/valhalla-core-sdk/models"
+	rolemodels "github.com/akrck02/valhalla-core-sdk/models/role"
+	systemmodels "github.com/akrck02/valhalla-core-sdk/models/system"
 )
 
-func CreateRole(user models.Role) *models.Error {
+func CreateRole(user rolemodels.Role) *systemmodels.Error {
 
 	return nil
 }
 
-func DeleteRole(user models.Role) *models.Error {
+func DeleteRole(user rolemodels.Role) *systemmodels.Error {
 
 	return nil
 }
 
-func UpdateRole(user models.Role) *models.Error {
+func UpdateRole(user rolemodels.Role) *systemmodels.Error {
 
 	return nil
 }
 
-func GetRole(user models.Role) *models.Error {
+func GetRole(user rolemodels.Role) *systemmodels.Error {
 
 	return nil
 }

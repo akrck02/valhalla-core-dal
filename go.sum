@@ -1,5 +1,5 @@
-github.com/akrck02/valhalla-core-sdk v0.0.11-20240526123155-dev h1:DEZF8bv52CNl81MS5ORpXk5hfex+iZ+Qk4n/zSMZq/w=
-github.com/akrck02/valhalla-core-sdk v0.0.11-20240526123155-dev/go.mod h1:yPZi0IBeyQFs3a7wOtR9QoF93bck8nKcTL5BzMjjs1g=
+github.com/akrck02/valhalla-core-sdk v0.0.11-20240709205701-dev h1:9/iuxxsgIoZfGj6gfAmNoNOBnaYbinolbMz9xP/gyk8=
+github.com/akrck02/valhalla-core-sdk v0.0.11-20240709205701-dev/go.mod h1:qBovw83Vo/iXggXZS4ttcMqF9xFSR5ogu7G+RWh/jGg=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/golang-jwt/jwt/v5 v5.2.1 h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk=
