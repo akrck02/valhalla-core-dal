@@ -60,8 +60,8 @@ jobs:
         mongodb-port: 27017
     
     - name: Create env file
-      run: echo "" > .env
-    
+      run: cp test.env .env
+
     - name: Run tests 
       run: go test -v ./...
 

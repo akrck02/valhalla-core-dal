@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func AddUserDevice(user *usersmodels.User, device *devicemodels.Device) (*devicemodels.Device, *systemmodels.Error) {
+func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemodels.Device) (*devicemodels.Device, *systemmodels.Error) {
 
 	token, err := utils.GenerateAuthToken(user, device, configuration.Params.Secret)
 
@@ -27,14 +27,10 @@ func AddUserDevice(user *usersmodels.User, device *devicemodels.Device) (*device
 		}
 	}
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
-
-	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	device.User = user.Email
 
-	found, err := FindDevice(coll, device)
+	found, _ := FindDevice(coll, device)
 
 	if found != nil {
 
@@ -105,20 +101,16 @@ func FindDeviceByAuthToken(coll *mongo.Collection, device *devicemodels.Device) 
 
 }
 
-func DeleteDevice(device *devicemodels.Device) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func DeleteDevice(conn *mongo.Client, device *devicemodels.Device) *systemmodels.Error {
 
 	//check if device exists
-	existsErr := DeviceExists(device)
+	existsErr := DeviceExists(conn, device)
 	if existsErr != nil {
 		return existsErr
 	}
 
 	// delete device
-	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	_, err := coll.DeleteOne(database.GetDefaultContext(), bson.M{"user": device.User, "address": device.Address, "useragent": device.UserAgent})
 
 	if err != nil {
@@ -132,14 +124,10 @@ func DeleteDevice(device *devicemodels.Device) *systemmodels.Error {
 	return nil
 }
 
-func DeviceExists(device *devicemodels.Device) *systemmodels.Error {
-
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
+func DeviceExists(conn *mongo.Client, device *devicemodels.Device) *systemmodels.Error {
 
 	// check if device exists
-	coll := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
+	coll := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	obtained, err := FindDevice(coll, device)
 
 	if err != nil {
