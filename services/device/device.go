@@ -18,7 +18,6 @@ import (
 func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemodels.Device) (*devicemodels.Device, *systemmodels.Error) {
 
 	token, err := utils.GenerateAuthToken(user, device, configuration.Params.Secret)
-
 	if err != nil {
 		return nil, &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
@@ -27,23 +26,19 @@ func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemod
 		}
 	}
 
-	coll := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 	device.User = user.Email
+	coll := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
 
-	found, _ := FindDevice(coll, device)
+	foundDevice, _ := FindDevice(coll, device)
 	device.Token = token
-	if found != nil {
-
+	if foundDevice != nil {
 		log.Debug("Device already exists, updating token")
-		coll.ReplaceOne(database.GetDefaultContext(), found, device)
-
+		coll.ReplaceOne(database.GetDefaultContext(), foundDevice, device)
 		return device, nil
 	}
 
 	log.Debug("Creating new device...")
-
 	_, insertErr := coll.InsertOne(database.GetDefaultContext(), device)
-
 	if insertErr != nil {
 		return device, &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
@@ -55,12 +50,6 @@ func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemod
 	return device, nil
 }
 
-// FindDevice finds a device in the database
-//
-// [param] coll | *mongo.Collection: collection to search
-// [param] device | models.Device: device to find
-//
-// [return] models.Device: device found --> error : The error that occurred
 func FindDevice(coll *mongo.Collection, device *devicemodels.Device) (*devicemodels.Device, *systemmodels.Error) {
 
 	var found devicemodels.Device
