@@ -31,7 +31,7 @@ func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemod
 	device.User = user.Email
 
 	found, _ := FindDevice(coll, device)
-
+	device.Token = token
 	if found != nil {
 
 		log.Debug("Device already exists, updating token")
@@ -40,7 +40,6 @@ func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemod
 		return device, nil
 	}
 
-	device.Token = token
 	log.Debug("Creating new device...")
 
 	_, insertErr := coll.InsertOne(database.GetDefaultContext(), device)

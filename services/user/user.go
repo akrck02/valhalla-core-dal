@@ -115,7 +115,6 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string) (string, *systemmodels.Error) {
 
 	// Connect database
-
 	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	log.Info("Password: " + user.Password)
 	found := authorizationOk(conn, user.Email, user.Clone().Password, coll)
