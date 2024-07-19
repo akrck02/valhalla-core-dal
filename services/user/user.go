@@ -145,7 +145,7 @@ func LoginAuth(conn *mongo.Client, auth *usersmodels.AuthLogin, ip string, userA
 
 	// Connect database
 
-	found, err := GetUser(conn, &usersmodels.User{Email: auth.Email}, false)
+	found, err := GetUserByEmail(conn, auth.Email, false)
 
 	if err != nil {
 		return err
@@ -462,15 +462,36 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error 
 	return nil
 }
 
-func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmodels.User, *systemmodels.Error) { // get user from database
+func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmodels.User, *systemmodels.Error) {
 
-	// Connect database
-
-	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
-	var found usersmodels.User
-	err := users.FindOne(database.GetDefaultContext(), bson.M{"email": user.Email}).Decode(&found)
+	id, err := utils.StringToObjectId(user.ID)
 
 	if err != nil {
+		return nil, &systemmodels.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid user id",
+		}
+	}
+
+	filter := &bson.M{"_id": id}
+
+	// get user from database
+	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
+	var found usersmodels.User
+	err = users.FindOne(database.GetDefaultContext(), filter).Decode(&found)
+
+	// if an error occurs,
+	if err != nil {
+		return nil, &systemmodels.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.UNEXPECTED_ERROR,
+			Message: err.Error(),
+		}
+	}
+
+	// if user not found, return error
+	if found.ID == "" {
 		return nil, &systemmodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.USER_NOT_FOUND,
@@ -478,10 +499,48 @@ func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmod
 		}
 	}
 
+	// if is secure search, hide password
 	if secure {
 		found.Password = "****************"
 	}
 
+	// return user
+	return &found, nil
+}
+
+func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels.User, *systemmodels.Error) {
+
+	filter := bson.M{"email": email}
+
+	// get user from database
+	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
+	var found usersmodels.User
+	err := users.FindOne(database.GetDefaultContext(), filter).Decode(&found)
+
+	// if an error occurs,
+	if err != nil {
+		return nil, &systemmodels.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.UNEXPECTED_ERROR,
+			Message: err.Error(),
+		}
+	}
+
+	// if user not found, return error
+	if found.ID == "" {
+		return nil, &systemmodels.Error{
+			Status:  http.HTTP_STATUS_NOT_FOUND,
+			Error:   valerror.USER_NOT_FOUND,
+			Message: "User not found",
+		}
+	}
+
+	// if is secure search, hide password
+	if secure {
+		found.Password = "****************"
+	}
+
+	// return user
 	return &found, nil
 }
 

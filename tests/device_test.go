@@ -28,10 +28,6 @@ func TestDeviceExists(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	// delete user
-	DeleteTestUser(conn, t, user)
-
 }
 
 func TestDeviceNotExists(t *testing.T) {
@@ -51,6 +47,4 @@ func TestDeviceNotExists(t *testing.T) {
 		t.Error("Device found")
 	}
 
-	// delete user
-	DeleteTestUser(conn, t, user)
 }

@@ -19,8 +19,7 @@ func TestRegister(t *testing.T) {
 	conn := database.Connect()
 	defer conn.Disconnect(context.Background())
 
-	user := RegisterMockTestUser(conn, t)
-	DeleteTestUser(conn, t, user)
+	_ = RegisterMockTestUser(conn, t)
 }
 
 func TestRegisterNotEmail(t *testing.T) {
@@ -175,7 +174,6 @@ func TestLogin(t *testing.T) {
 
 	user := RegisterMockTestUser(conn, t)
 	LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
-	DeleteTestUser(conn, t, user)
 
 }
 
@@ -189,10 +187,8 @@ func TestLoginWrongPassword(t *testing.T) {
 
 	log.Info("Login with wrong password")
 	log.FormattedInfo("Password: ${0}", user.Password)
-
-	// login the user
 	LoginTestUserWithError(conn, t, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, valerror.USER_NOT_AUTHORIZED)
-	DeleteTestUser(conn, t, user)
+
 }
 
 func TestLoginWrongEmail(t *testing.T) {
@@ -201,12 +197,8 @@ func TestLoginWrongEmail(t *testing.T) {
 	defer conn.Disconnect(context.Background())
 
 	user := RegisterMockTestUser(conn, t)
-	realEmail := user.Email
 	user.Email = "wrong" + mock.Email()
 	LoginTestUserWithError(conn, t, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, valerror.USER_NOT_AUTHORIZED)
-
-	user.Email = realEmail
-	DeleteTestUser(conn, t, user)
 }
 
 func TestLoginAuth(t *testing.T) {
@@ -217,8 +209,6 @@ func TestLoginAuth(t *testing.T) {
 	user := RegisterMockTestUser(conn, t)
 	token := LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
 	LoginAuthTestUser(conn, t, user.Email, token)
-	DeleteTestUser(conn, t, user)
-
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -228,8 +218,6 @@ func TestDeleteUser(t *testing.T) {
 
 	user := RegisterMockTestUser(conn, t)
 	LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
-	DeleteTestUser(conn, t, user)
-
 }
 
 func TestDeleteUserNoEmail(t *testing.T) {
@@ -285,9 +273,6 @@ func TestEditUserEmail(t *testing.T) {
 
 	EditTestUserEmail(conn, t, &emailChangeRequest)
 	user.Email = newEmail
-
-	// delete the user
-	DeleteTestUser(conn, t, user)
 }
 
 func TestEditUserEmailNoEmail(t *testing.T) {
@@ -402,11 +387,6 @@ func TestEditUserEmailExists(t *testing.T) {
 	}
 
 	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.HTTP_STATUS_CONFLICT, valerror.USER_ALREADY_EXISTS)
-	log.Jump()
-
-	// Delete the users
-	DeleteTestUser(conn, t, user)
-	DeleteTestUser(conn, t, newUser)
 }
 
 func TestEditUserSameEmail(t *testing.T) {
@@ -435,9 +415,6 @@ func TestEditUserPassword(t *testing.T) {
 
 	// check if the user can login with the new password
 	LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
-
-	// delete the user
-	DeleteTestUser(conn, t, user)
 }
 
 func TestEditUserPasswordUserNotFound(t *testing.T) {
@@ -463,9 +440,6 @@ func TestEditUserPasswordShort(t *testing.T) {
 	// change the user password
 	user.Password = mock.PasswordShort()
 	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.SHORT_PASSWORD)
-
-	// delete the user
-	DeleteTestUser(conn, t, user)
 }
 
 func TestEditUserPasswordNoLowercase(t *testing.T) {
@@ -477,9 +451,6 @@ func TestEditUserPasswordNoLowercase(t *testing.T) {
 	// change the user password
 	user.Password = mock.PasswordNotLowerCase()
 	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_UPPER_LOWER_PASSWORD)
-
-	// delete the user
-	DeleteTestUser(conn, t, user)
 }
 
 func TestEditUserPasswordNoUppercase(t *testing.T) {
@@ -491,10 +462,6 @@ func TestEditUserPasswordNoUppercase(t *testing.T) {
 	// change the user password
 	user.Password = mock.PasswordNotUpperCase()
 	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_UPPER_LOWER_PASSWORD)
-
-	// delete the user
-	DeleteTestUser(conn, t, user)
-
 }
 
 func TestEditUserPasswordNoNumber(t *testing.T) {
@@ -506,10 +473,6 @@ func TestEditUserPasswordNoNumber(t *testing.T) {
 	// change the user password
 	user.Password = mock.PasswordNotNumber()
 	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_ALPHANUMERIC_PASSWORD)
-
-	// delete the user
-	DeleteTestUser(conn, t, user)
-
 }
 
 // func TestEditProfilePicture(t *testing.T) {
@@ -533,9 +496,6 @@ func TestEditUserPasswordNoNumber(t *testing.T) {
 
 // 	log.Info("Profile picture changed")
 
-// 	// delete the user
-// 	DeleteTestUser(t, user)
-
 // }
 
 func TestTokenValidation(t *testing.T) {
@@ -545,7 +505,6 @@ func TestTokenValidation(t *testing.T) {
 
 	user := RegisterMockTestUser(conn, t)
 	LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
-	DeleteTestUser(conn, t, user)
 }
 
 func TestTokenValidationInvalidToken(t *testing.T) {
@@ -602,7 +561,57 @@ func TestValidationCode(t *testing.T) {
 		return
 	}
 
-	// delete the user
-	DeleteTestUser(conn, t, user)
+}
+
+func TestGetUser(t *testing.T) {
+
+	conn := database.Connect()
+	defer conn.Disconnect(context.Background())
+
+	user := RegisterMockTestUser(conn, t)
+	found, err := userdal.GetUser(conn, user, true)
+
+	if err != nil {
+		t.Error("The user was not found", err)
+	}
+
+	if found == nil {
+		t.Error("The user was not found")
+		return
+	}
+
+}
+
+func TestGetUserNotFound(t *testing.T) {
+
+	conn := database.Connect()
+	defer conn.Disconnect(context.Background())
+
+	user := RegisterMockTestUser(conn, t)
+	user.ID = mock.InvalidId()
+	_, err := userdal.GetUser(conn, user, true)
+
+	if err == nil {
+		t.Error("The user was found")
+	}
+
+}
+
+func TestGetUserByEmail(t *testing.T) {
+
+	conn := database.Connect()
+	defer conn.Disconnect(context.Background())
+
+	user := RegisterMockTestUser(conn, t)
+	found, err := userdal.GetUserByEmail(conn, user.Email, true)
+
+	if err != nil {
+		t.Error("The user was not found", err)
+	}
+
+	if found == nil {
+		t.Error("The user was not found")
+		return
+	}
 
 }

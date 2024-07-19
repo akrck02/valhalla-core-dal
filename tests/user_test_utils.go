@@ -115,7 +115,6 @@ func LoginTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.
 func LoginAuthTestUser(conn *mongo.Client, t *testing.T, email string, token string) {
 
 	log.FormattedInfo("Authenticating token: ${0}", token)
-
 	log.Info("Checking if the token is valid")
 
 	var authLogin = &usersmodels.AuthLogin{

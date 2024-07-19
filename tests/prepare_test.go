@@ -11,15 +11,16 @@ import (
 	"github.com/akrck02/valhalla-core-sdk/log"
 )
 
-var setupDone bool = false
+var pathSetupDone bool = false
 
 func TestMain(m *testing.M) {
-	setup()
+	setupPathIfNecessary()
+	satupDatabase()
 	os.Exit(m.Run())
 }
 
-func setup() {
-	if setupDone {
+func setupPathIfNecessary() {
+	if pathSetupDone {
 		return
 	}
 
@@ -34,9 +35,14 @@ func setup() {
 	configuration.SetBasePath(BASE_PATH)
 	configuration.LoadConfiguration(BASE_PATH + ".env")
 
+}
+
+func satupDatabase() {
+
 	log.Jump()
 	log.Info("Setting up test environment...")
 	database.SetupTest()
-	setupDone = true
+	pathSetupDone = true
 	log.Jump()
+
 }
