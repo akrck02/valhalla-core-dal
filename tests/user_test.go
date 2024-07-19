@@ -19,7 +19,22 @@ func TestRegister(t *testing.T) {
 	conn := database.Connect()
 	defer conn.Disconnect(context.Background())
 
-	_ = RegisterMockTestUser(conn, t)
+	user := RegisterMockTestUser(conn, t)
+
+	if user == nil {
+		t.Error("The user was not registered")
+		return
+	}
+
+	if user.CreationDate == nil {
+		t.Error("The user creation date is invalid")
+		return
+	}
+
+	if user.LastUpdate == nil {
+		t.Error("The user last update date is invalid")
+		return
+	}
 }
 
 func TestRegisterNotEmail(t *testing.T) {
@@ -261,7 +276,7 @@ func TestEditUserEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUser(conn, t, user)
+	user = RegisterTestUser(conn, t, user)
 	LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
 
 	// Change the user email
@@ -273,6 +288,18 @@ func TestEditUserEmail(t *testing.T) {
 
 	EditTestUserEmail(conn, t, &emailChangeRequest)
 	user.Email = newEmail
+
+	newUser, err := userdal.GetUser(conn, user, true)
+
+	if err != nil {
+		t.Error("The user was not found", err)
+		return
+	}
+
+	if newUser.LastUpdate == user.LastUpdate {
+		t.Error("The user last update date was not changed")
+		return
+	}
 }
 
 func TestEditUserEmailNoEmail(t *testing.T) {
@@ -415,6 +442,19 @@ func TestEditUserPassword(t *testing.T) {
 
 	// check if the user can login with the new password
 	LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
+
+	newUser, err := userdal.GetUser(conn, user, true)
+
+	if err != nil {
+		t.Error("The user was not found", err)
+		return
+	}
+
+	if newUser.LastUpdate == user.LastUpdate {
+		t.Error("The user last update date was not changed")
+		return
+	}
+
 }
 
 func TestEditUserPasswordUserNotFound(t *testing.T) {

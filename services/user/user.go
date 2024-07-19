@@ -96,6 +96,10 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	userToInsert.Password = utils.EncryptSha256(user.Clone().Password)
 	userToInsert.ValidationCode = code
 
+	creationDate := utils.GetCurrentMillis()
+	userToInsert.CreationDate = &creationDate
+	userToInsert.LastUpdate = userToInsert.CreationDate
+
 	// register user on database
 	res, errInsert := coll.InsertOne(database.GetDefaultContext(), userToInsert)
 
@@ -109,6 +113,10 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 
 	// get user from database
 	user.ID = res.InsertedID.(primitive.ObjectID).Hex()
+	user.CreationDate = userToInsert.CreationDate
+	user.LastUpdate = userToInsert.LastUpdate
+	user.ValidationCode = userToInsert.ValidationCode
+
 	return nil
 }
 
@@ -206,22 +214,23 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 		}
 	}
 
-	toUpdate := bson.M{"$set": bson.M{}}
+	setObject := bson.M{}
 
 	if user.Username != "" {
-		toUpdate["$set"].(bson.M)["username"] = user.Username
+		setObject["username"] = user.Username
 	}
 
 	if user.Password != "" {
-		log.Info("password: " + user.Password)
 		encryptedPass := user.Password
-		toUpdate["$set"].(bson.M)["password"] = utils.EncryptSha256(encryptedPass)
-		log.Info("encrypted password: " + encryptedPass)
+		setObject["password"] = utils.EncryptSha256(encryptedPass)
 	}
 
 	if user.ProfilePic != "" {
-		toUpdate["$set"].(bson.M)["profilePic"] = user.ProfilePic
+		setObject["profilePic"] = user.ProfilePic
 	}
+
+	setObject["updatedate"] = utils.GetCurrentMillis()
+	toUpdate := bson.M{"$set": setObject}
 
 	// update user on database
 	res, err := users.UpdateOne(database.GetDefaultContext(), bson.M{"email": user.Email}, toUpdate)
@@ -299,7 +308,13 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 
 	}
 
-	updateStatus, err := users.UpdateOne(database.GetDefaultContext(), bson.M{"email": mail.Email}, bson.M{"$set": bson.M{"email": mail.NewEmail}})
+	updateStatus, err := users.UpdateOne(database.GetDefaultContext(),
+		bson.M{"email": mail.Email},
+		bson.M{"$set": bson.M{
+			"email":      mail.NewEmail,
+			"updatedate": utils.GetCurrentMillis(),
+		}},
+	)
 
 	if err != nil {
 		return &systemmodels.Error{

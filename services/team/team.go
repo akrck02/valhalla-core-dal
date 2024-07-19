@@ -79,7 +79,6 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Check if team already exists
 	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
-
 	found := teamExists(coll, team)
 
 	if found.Name != "" {
@@ -91,7 +90,9 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 	}
 
 	// add current date to team
-	team.CreationDate = utils.CurrentDate()
+	creationDate := utils.GetCurrentMillis()
+	team.CreationDate = &creationDate
+	team.LastUpdate = team.CreationDate
 
 	// Create team
 	res, err2 := coll.InsertOne(database.GetDefaultContext(), team)
@@ -154,14 +155,14 @@ func EditTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
+	lastUpdate := utils.GetCurrentMillis()
+	team.LastUpdate = &lastUpdate
 	_, err = coll.UpdateOne(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{
 		"$set": bson.M{
 			"name":        team.Name,
 			"description": team.Description,
 			"profilepic":  team.ProfilePic,
-		},
-		"$currentDate": bson.M{
-			"lastupdate": true,
+			"updatedate":  team.LastUpdate,
 		},
 	})
 

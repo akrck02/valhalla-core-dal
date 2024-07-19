@@ -18,7 +18,17 @@ func TestCreateProject(t *testing.T) {
 	defer conn.Disconnect(context.Background())
 
 	user := RegisterMockTestUser(conn, t)
-	CreateMockTestProjectWithUser(conn, t, user)
+	project := CreateMockTestProjectWithUser(conn, t, user)
+
+	if project == nil {
+		t.Errorf("Error creating project")
+		return
+	}
+
+	if project.CreationDate == nil || project.LastUpdate == nil {
+		t.Errorf("Error creating project, dates not set")
+		return
+	}
 
 }
 
@@ -104,4 +114,24 @@ func TestGetUserProjects(t *testing.T) {
 	}
 
 	DeleteTestUser(conn, t, user)
+}
+
+func TestEditProject(t *testing.T) {
+
+	conn := database.Connect()
+	defer conn.Disconnect(context.Background())
+
+	user := RegisterMockTestUser(conn, t)
+	project := CreateMockTestProjectWithUser(conn, t, user)
+
+	if project == nil {
+		t.Errorf("Error creating project")
+		return
+	}
+
+	if project.CreationDate == nil || project.LastUpdate == nil {
+		t.Errorf("Error creating project, dates not set")
+		return
+	}
+
 }

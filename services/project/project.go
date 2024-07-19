@@ -73,13 +73,24 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 	}
 
 	// Insert project into database
-	_, insertError := coll.InsertOne(database.GetDefaultContext(), project)
+	creationDate := utils.GetCurrentMillis()
+	project.CreationDate = &creationDate
+	project.LastUpdate = &creationDate
+	insertResult, insertError := coll.InsertOne(database.GetDefaultContext(), project)
 
 	if insertError != nil {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.PROJECT_ALREADY_EXISTS,
-			Message: "Project already exists",
+			Error:   valerror.UNEXPECTED_ERROR,
+			Message: insertError.Error(),
+		}
+	}
+
+	if insertResult.InsertedID == nil {
+		return &systemmodels.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.UNEXPECTED_ERROR,
+			Message: "Project not created",
 		}
 	}
 
@@ -87,6 +98,37 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 }
 
 func EditProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
+
+	// Transform team id to object id
+	// also check if team id is valid
+	objID, err := utils.StringToObjectId(project.ID)
+
+	if err != nil {
+		return &systemmodels.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid object id",
+		}
+	}
+
+	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
+
+	_, err = coll.UpdateOne(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{
+		"$set": bson.M{
+			"name":        project.Name,
+			"description": project.Description,
+			"updatedate":  project.LastUpdate,
+		},
+	})
+
+	// Check if team was updated
+	if err != nil {
+		return &systemmodels.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.UPDATE_ERROR,
+			Message: "Could not update team: " + err.Error(),
+		}
+	}
 
 	return nil
 }

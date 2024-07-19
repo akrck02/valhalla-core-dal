@@ -36,6 +36,11 @@ func TestEditTeam(t *testing.T) {
 		return
 	}
 
+	if obtainedTeam.LastUpdate == team.LastUpdate {
+		t.Errorf("Last update not updated")
+		return
+	}
+
 	t.Log("Team edited successfully")
 
 }

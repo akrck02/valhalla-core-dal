@@ -31,11 +31,16 @@ func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemod
 
 	foundDevice, _ := FindDevice(coll, device)
 	device.Token = token
+	updateDate := utils.GetCurrentMillis()
 	if foundDevice != nil {
 		log.Debug("Device already exists, updating token")
+		device.LastUpdate = &updateDate
 		coll.ReplaceOne(database.GetDefaultContext(), foundDevice, device)
 		return device, nil
 	}
+
+	device.CreationDate = &updateDate
+	device.LastUpdate = &updateDate
 
 	log.Debug("Creating new device...")
 	_, insertErr := coll.InsertOne(database.GetDefaultContext(), device)
