@@ -2,9 +2,11 @@ package projectdal
 
 import (
 	"github.com/akrck02/valhalla-core-dal/database"
+	userdal "github.com/akrck02/valhalla-core-dal/services/user"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
 	systemmodels "github.com/akrck02/valhalla-core-sdk/models/system"
+	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
 
@@ -14,6 +16,7 @@ import (
 
 func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
 
+	// if the project name is empty, return an error
 	if utils.IsEmpty(project.Name) {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
@@ -22,6 +25,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 		}
 	}
 
+	// if the project description is empty, return an error
 	if utils.IsEmpty(project.Description) {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
@@ -30,6 +34,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 		}
 	}
 
+	// if the project owner is empty, return an error
 	if utils.IsEmpty(project.Owner) {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
@@ -38,8 +43,26 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 		}
 	}
 
+	// Check if the user exists and is valid
+	owner, userGetError := userdal.GetUser(conn, &usersmodels.User{ID: project.Owner}, true)
+	if userGetError != nil {
+		return userGetError
+	}
+
+	// convert the owner ID to an object ID
+	_, parsingError := utils.StringToObjectId(owner.ID)
+	if parsingError != nil {
+		return &systemmodels.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid ID",
+		}
+	}
+
+	// Check if the project already exists
+	// it is not possible to have two projects with the same name and owner
 	coll := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
-	found := nameExists(coll, project.Name, project.Owner)
+	found := projectNameExists(coll, project.Name, owner.ID)
 
 	if found {
 		return &systemmodels.Error{
@@ -49,9 +72,10 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 		}
 	}
 
-	_, err := coll.InsertOne(database.GetDefaultContext(), project)
+	// Insert project into database
+	_, insertError := coll.InsertOne(database.GetDefaultContext(), project)
 
-	if err != nil {
+	if insertError != nil {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.PROJECT_ALREADY_EXISTS,
@@ -81,23 +105,21 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 		}
 	}
 
-	// delete user devices
-	devices := client.Database(database.CurrentDatabase).Collection(database.DEVICE)
-	_, err := devices.DeleteMany(database.GetDefaultContext(), bson.M{"project": project.Name})
-
-	if err != nil {
+	// Check if the project ID is valid
+	id, parsingError := utils.StringToObjectId(project.ID)
+	if parsingError != nil {
 		return &systemmodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.PROJECT_NOT_DELETED,
-			Message: "Project not deleted",
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid ID",
 		}
 	}
 
+	// Delete project
 	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
+	deleteResult, err := projects.DeleteOne(database.GetDefaultContext(), bson.M{"ID": id})
 
-	var deleteResult *mongo.DeleteResult
-	deleteResult, err = projects.DeleteOne(database.GetDefaultContext(), bson.M{"name": project.Name})
-
+	// If an error occurs, return the error
 	if err != nil {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
@@ -106,6 +128,7 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 		}
 	}
 
+	// If the project is not found, return an error
 	if deleteResult.DeletedCount == 0 {
 		return &systemmodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
@@ -123,12 +146,32 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 	var client = database.Connect()
 	defer database.Disconnect(*client)
 
+	// Check if the project ID is valid
+	projectIdObject, parsingError := utils.StringToObjectId(project.ID)
+	if parsingError != nil {
+		return nil, &systemmodels.Error{
+			Status:  http.HTTP_STATUS_BAD_REQUEST,
+			Error:   valerror.INVALID_OBJECT_ID,
+			Message: "Invalid ID",
+		}
+	}
+
+	// Get project by id
 	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
-
 	found := projectmodels.Project{}
-	err := projects.FindOne(database.GetDefaultContext(), bson.M{"name": project.Name}).Decode(&found)
+	err := projects.FindOne(database.GetDefaultContext(), bson.M{"_id": projectIdObject}).Decode(&found)
 
+	// If an error occurs, return the error
 	if err != nil {
+		return nil, &systemmodels.Error{
+			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			Error:   valerror.UNEXPECTED_ERROR,
+			Message: err.Error(),
+		}
+	}
+
+	// If the project is not found, return an error
+	if utils.IsEmpty(found.ID) {
 		return nil, &systemmodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.PROJECT_NOT_FOUND,
@@ -139,10 +182,17 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 	return &found, nil
 }
 
-func GetUserProjects(conn *mongo.Client, email string) []projectmodels.Project {
+func GetUserProjects(conn *mongo.Client, ownerId string) []projectmodels.Project {
 
+	// Check if the owner ID is valid
+	_, parsingError := utils.StringToObjectId(ownerId)
+	if parsingError != nil {
+		return nil
+	}
+
+	// Check the projects belonging to the owner
 	projects := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
-	filter := bson.M{"owner": email}
+	filter := bson.M{"owner": ownerId}
 	cursor, err := projects.Find(database.GetDefaultContext(), filter)
 	if err != nil {
 		return nil
@@ -154,7 +204,7 @@ func GetUserProjects(conn *mongo.Client, email string) []projectmodels.Project {
 	return result
 }
 
-func nameExists(coll *mongo.Collection, name string, owner string) bool {
+func projectNameExists(coll *mongo.Collection, name string, owner string) bool {
 	filter := bson.M{"name": name, "owner": owner}
 
 	var result *projectmodels.Project

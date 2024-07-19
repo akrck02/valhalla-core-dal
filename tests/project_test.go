@@ -19,7 +19,6 @@ func TestCreateProject(t *testing.T) {
 
 	user := RegisterMockTestUser(conn, t)
 	CreateMockTestProjectWithUser(conn, t, user)
-	DeleteTestUser(conn, t, user)
 
 }
 
@@ -82,22 +81,26 @@ func TestGetUserProjects(t *testing.T) {
 	project := CreateMockTestProjectWithUser(conn, t, user)
 	project2 := CreateMockTestProjectWithUser(conn, t, user)
 
-	projects := projectdal.GetUserProjects(conn, user.Email)
+	projects := projectdal.GetUserProjects(conn, user.ID)
 
 	if len(projects) == 0 {
-		t.Errorf("No projects found for user: %v", user.Email)
+		t.Errorf("No projects found for user: %v", user.ID)
+		return
 	}
 
 	if len(projects) != 2 {
-		t.Errorf("Incorrect number of projects found for user: %v", user.Email)
+		t.Errorf("Incorrect number of projects found for user: %v", user.ID)
+		return
 	}
 
 	if projects[0].Name != project.Name {
 		t.Errorf("Incorrect project found: %v", projects[0].Name)
+		return
 	}
 
 	if projects[1].Name != project2.Name {
 		t.Errorf("Incorrect project found: %v", projects[1].Name)
+		return
 	}
 
 	DeleteTestUser(conn, t, user)

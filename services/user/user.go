@@ -622,7 +622,6 @@ func mailExists(conn *mongo.Client, email string, coll *mongo.Collection) *users
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	if err != nil {
-		log.FormattedError("Error: ${0}", err.Error())
 		return nil
 	}
 
@@ -640,7 +639,6 @@ func authorizationOk(conn *mongo.Client, email string, password string, coll *mo
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	if err != nil {
-		log.FormattedError("Error: ${0}", err.Error())
 		return nil
 	}
 
