@@ -71,7 +71,7 @@ func Register(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 	}
 
 	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
-	found := mailExists(conn, user.Email, coll)
+	found := mailExists(user.Email, coll)
 
 	if found != nil {
 
@@ -125,7 +125,7 @@ func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string
 	// Connect database
 	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	log.Info("Password: " + user.Password)
-	found := authorizationOk(conn, user.Email, user.Clone().Password, coll)
+	found := authorizationOk(user.Email, user.Clone().Password, coll)
 
 	if found == nil {
 		return "", &apimodels.Error{
@@ -287,7 +287,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Erro
 
 	// Check if user exists
 	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
-	found := mailExists(conn, mail.NewEmail, users)
+	found := mailExists(mail.NewEmail, users)
 
 	if found != nil {
 		return &apimodels.Error{
@@ -629,7 +629,7 @@ func ValidateUser(conn *mongo.Client, code string) *apimodels.Error {
 	return nil
 }
 
-func mailExists(conn *mongo.Client, email string, coll *mongo.Collection) *usersmodels.User {
+func mailExists(email string, coll *mongo.Collection) *usersmodels.User {
 
 	filter := bson.D{{Key: "email", Value: email}}
 
@@ -643,7 +643,7 @@ func mailExists(conn *mongo.Client, email string, coll *mongo.Collection) *users
 	return &result
 }
 
-func authorizationOk(conn *mongo.Client, email string, password string, coll *mongo.Collection) *usersmodels.User {
+func authorizationOk(email string, password string, coll *mongo.Collection) *usersmodels.User {
 
 	filter := bson.D{
 		{Key: "email", Value: email},
