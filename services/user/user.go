@@ -6,8 +6,8 @@ import (
 	devicedal "github.com/akrck02/valhalla-core-dal/services/device"
 	"github.com/akrck02/valhalla-core-sdk/http"
 	"github.com/akrck02/valhalla-core-sdk/log"
+	apimodels "github.com/akrck02/valhalla-core-sdk/models/api"
 	devicemodels "github.com/akrck02/valhalla-core-sdk/models/device"
-	systemmodels "github.com/akrck02/valhalla-core-sdk/models/system"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
@@ -24,10 +24,10 @@ type EmailChangeRequest struct {
 	NewEmail string `json:"new_email"`
 }
 
-func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
+func Register(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if utils.IsEmpty(user.Email) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_USER_EMAIL,
 			Message: "Email cannot be empty",
@@ -35,7 +35,7 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	}
 
 	if utils.IsEmpty(user.Password) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_USER_PASSWORD,
 			Message: "Password cannot be empty",
@@ -43,7 +43,7 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	}
 
 	if utils.IsEmpty(user.Username) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_USERNAME,
 			Message: "Username cannot be empty",
@@ -53,7 +53,7 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	var checkedPass = utils.ValidatePassword(user.Password)
 
 	if checkedPass.Response != 200 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   int(checkedPass.Response),
 			Message: checkedPass.Message,
@@ -63,7 +63,7 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	checkedPass = utils.ValidateEmail(user.Email)
 
 	if checkedPass.Response != 200 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   checkedPass.Response,
 			Message: checkedPass.Message,
@@ -71,11 +71,11 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	}
 
 	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
-	found := mailExists(conn, user.Email, coll)
+	found := mailExists(user.Email, coll)
 
 	if found != nil {
 
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_CONFLICT,
 			Error:   valerror.USER_ALREADY_EXISTS,
 			Message: "User already exists",
@@ -85,7 +85,7 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	code, err := utils.GenerateValidationCode(user.Email)
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.CANNOT_CREATE_VALIDATION_CODE,
 			Message: "User not created",
@@ -104,7 +104,7 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	res, errInsert := coll.InsertOne(database.GetDefaultContext(), userToInsert)
 
 	if errInsert != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_CONFLICT,
 			Error:   valerror.USER_ALREADY_EXISTS,
 			Message: "User already exists",
@@ -120,15 +120,15 @@ func Register(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	return nil
 }
 
-func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string) (string, *systemmodels.Error) {
+func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string) (string, *apimodels.Error) {
 
 	// Connect database
 	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	log.Info("Password: " + user.Password)
-	found := authorizationOk(conn, user.Email, user.Clone().Password, coll)
+	found := authorizationOk(user.Email, user.Clone().Password, coll)
 
 	if found == nil {
-		return "", &systemmodels.Error{
+		return "", &apimodels.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
 			Error:   valerror.USER_NOT_AUTHORIZED,
 			Message: "Invalid credentials",
@@ -139,7 +139,7 @@ func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string
 	device, err := devicedal.AddUserDevice(conn, found, device)
 
 	if err != nil {
-		return "", &systemmodels.Error{
+		return "", &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.UNEXPECTED_ERROR,
 			Message: "Cannot generate your auth token",
@@ -149,7 +149,7 @@ func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string
 	return device.Token, nil
 }
 
-func LoginAuth(conn *mongo.Client, auth *usersmodels.AuthLogin, ip string, userAgent string) *systemmodels.Error {
+func LoginAuth(conn *mongo.Client, auth *usersmodels.AuthLogin, ip string, userAgent string) *apimodels.Error {
 
 	// Connect database
 
@@ -171,7 +171,7 @@ func LoginAuth(conn *mongo.Client, auth *usersmodels.AuthLogin, ip string, userA
 	device, deviceFindingError := devicedal.FindDeviceByAuthToken(devices, &filter)
 
 	if deviceFindingError != nil || device == nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.USER_NOT_AUTHORIZED,
 			Message: "No possible login devices",
@@ -181,7 +181,7 @@ func LoginAuth(conn *mongo.Client, auth *usersmodels.AuthLogin, ip string, userA
 	return nil
 }
 
-func EditUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
+func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	// Connect database
 
@@ -192,7 +192,7 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 		checkedPass := utils.ValidateEmail(user.Email)
 
 		if checkedPass.Response != 200 {
-			return &systemmodels.Error{
+			return &apimodels.Error{
 				Status:  http.HTTP_STATUS_BAD_REQUEST,
 				Error:   checkedPass.Response,
 				Message: checkedPass.Message,
@@ -206,7 +206,7 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 		checkedPass := utils.ValidatePassword(user.Password)
 
 		if checkedPass.Response != 200 {
-			return &systemmodels.Error{
+			return &apimodels.Error{
 				Status:  http.HTTP_STATUS_BAD_REQUEST,
 				Error:   checkedPass.Response,
 				Message: checkedPass.Message,
@@ -236,7 +236,7 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	res, err := users.UpdateOne(database.GetDefaultContext(), bson.M{"email": user.Email}, toUpdate)
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated",
@@ -244,7 +244,7 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	}
 
 	if res.MatchedCount == 0 && res.ModifiedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.USER_NOT_FOUND,
 			Message: "Users not found",
@@ -254,12 +254,12 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
 	return nil
 }
 
-func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.Error {
+func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Error {
 
 	// Connect database
 
 	if utils.IsEmpty(mail.Email) || utils.IsEmpty(mail.NewEmail) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_USER_EMAIL,
 			Message: "Email cannot be empty",
@@ -268,7 +268,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 
 	// Equal emails
 	if mail.Email == mail.NewEmail {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.USER_EDITING_EMAILS_EQUAL,
 			Message: "The new email is the same as the old one",
@@ -278,7 +278,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 	// validate email
 	var checkedPass = utils.ValidateEmail(mail.Email)
 	if checkedPass.Response != 200 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   checkedPass.Response,
 			Message: checkedPass.Message,
@@ -287,10 +287,10 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 
 	// Check if user exists
 	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
-	found := mailExists(conn, mail.NewEmail, users)
+	found := mailExists(mail.NewEmail, users)
 
 	if found != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_CONFLICT,
 			Error:   valerror.USER_ALREADY_EXISTS,
 			Message: "That email is already in use",
@@ -300,7 +300,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 	// update user on database
 	var checkedEmail = utils.ValidateEmail(mail.NewEmail)
 	if checkedEmail.Response != 200 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   int(checkedEmail.Response),
 			Message: checkedEmail.Message,
@@ -317,7 +317,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 	)
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated" + err.Error(),
@@ -325,7 +325,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 	}
 
 	if updateStatus.MatchedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
@@ -333,7 +333,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 	}
 
 	if updateStatus.ModifiedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated",
@@ -346,7 +346,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 	updateStatus, err = devices.UpdateMany(database.GetDefaultContext(), bson.M{"user": mail.Email}, bson.M{"$set": bson.M{"user": mail.NewEmail}})
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User devices not updated",
@@ -354,7 +354,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 	}
 
 	if updateStatus.MatchedCount != 0 && updateStatus.ModifiedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User devices not updated",
@@ -364,12 +364,12 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *systemmodels.E
 	return nil
 }
 
-func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture []byte) *systemmodels.Error {
+func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture []byte) *apimodels.Error {
 
 	// Connect database
 
 	if utils.IsEmpty(user.Email) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_USER_EMAIL,
 			Message: "Email cannot be empty",
@@ -382,7 +382,7 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 		err := utils.CreateDir(profilePathDir)
 
 		if err != nil {
-			return &systemmodels.Error{
+			return &apimodels.Error{
 				Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 				Error:   valerror.USER_NOT_UPDATED,
 				Message: "User not updated, image not saved :" + err.Error(),
@@ -395,7 +395,7 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 	err := utils.SaveFile(profilePicPath, picture)
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated, image not saved :" + err.Error(),
@@ -406,7 +406,7 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 	editErr := EditUser(conn, user)
 
 	if editErr != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not updated",
@@ -416,12 +416,12 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 	return nil
 }
 
-func DeleteUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error {
+func DeleteUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	// Connect database
 
 	if utils.IsEmpty(user.Email) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_USER_EMAIL,
 			Message: "Email cannot be empty",
@@ -433,7 +433,7 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error 
 	_, err := projects.DeleteMany(database.GetDefaultContext(), bson.M{"owner": user.Email})
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_DELETED,
 			Message: "User not deleted",
@@ -445,7 +445,7 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error 
 	_, err = devices.DeleteMany(database.GetDefaultContext(), bson.M{"user": user.Email})
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_DELETED,
 			Message: "User not deleted",
@@ -459,7 +459,7 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error 
 	deleteResult, err = users.DeleteOne(database.GetDefaultContext(), bson.M{"email": user.Email})
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_DELETED,
 			Message: "User not deleted",
@@ -467,7 +467,7 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error 
 	}
 
 	if deleteResult.DeletedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
@@ -477,12 +477,12 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *systemmodels.Error 
 	return nil
 }
 
-func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmodels.User, *systemmodels.Error) {
+func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmodels.User, *apimodels.Error) {
 
 	id, err := utils.StringToObjectId(user.ID)
 
 	if err != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid user id",
@@ -498,7 +498,7 @@ func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmod
 
 	// if an error occurs,
 	if err != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.UNEXPECTED_ERROR,
 			Message: err.Error(),
@@ -507,7 +507,7 @@ func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmod
 
 	// if user not found, return error
 	if found.ID == "" {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
@@ -523,7 +523,7 @@ func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmod
 	return &found, nil
 }
 
-func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels.User, *systemmodels.Error) {
+func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels.User, *apimodels.Error) {
 
 	filter := bson.M{"email": email}
 
@@ -534,7 +534,7 @@ func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels
 
 	// if an error occurs,
 	if err != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.UNEXPECTED_ERROR,
 			Message: err.Error(),
@@ -543,7 +543,7 @@ func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels
 
 	// if user not found, return error
 	if found.ID == "" {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
@@ -559,12 +559,12 @@ func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels
 	return &found, nil
 }
 
-func ValidateUser(conn *mongo.Client, code string) *systemmodels.Error {
+func ValidateUser(conn *mongo.Client, code string) *apimodels.Error {
 
 	// Connect database
 
 	if utils.IsEmpty(code) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_VALIDATION_CODE,
 			Message: "Code cannot be empty",
@@ -581,7 +581,7 @@ func ValidateUser(conn *mongo.Client, code string) *systemmodels.Error {
 	log.FormattedInfo("code: ${0}", code)
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_VALIDATION_CODE,
 			Message: "Invalid validation code",
@@ -589,7 +589,7 @@ func ValidateUser(conn *mongo.Client, code string) *systemmodels.Error {
 	}
 
 	if user.Validated {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_OK,
 			Error:   valerror.USER_ALREADY_VALIDATED,
 			Message: "User already validated",
@@ -597,7 +597,7 @@ func ValidateUser(conn *mongo.Client, code string) *systemmodels.Error {
 	}
 
 	if user.ValidationCode != code {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_VALIDATION_CODE,
 			Message: "Invalid validation code",
@@ -611,7 +611,7 @@ func ValidateUser(conn *mongo.Client, code string) *systemmodels.Error {
 	result, editerr := coll.UpdateOne(database.GetDefaultContext(), bson.M{"email": user.Email}, bson.M{"$set": bson.M{"validation_code": "", "validated": true}})
 
 	if result.MatchedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.USER_NOT_FOUND,
 			Message: "User not found",
@@ -619,7 +619,7 @@ func ValidateUser(conn *mongo.Client, code string) *systemmodels.Error {
 	}
 
 	if editerr != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.USER_NOT_UPDATED,
 			Message: "User not validated: " + editerr.Error(),
@@ -629,7 +629,7 @@ func ValidateUser(conn *mongo.Client, code string) *systemmodels.Error {
 	return nil
 }
 
-func mailExists(conn *mongo.Client, email string, coll *mongo.Collection) *usersmodels.User {
+func mailExists(email string, coll *mongo.Collection) *usersmodels.User {
 
 	filter := bson.D{{Key: "email", Value: email}}
 
@@ -643,7 +643,7 @@ func mailExists(conn *mongo.Client, email string, coll *mongo.Collection) *users
 	return &result
 }
 
-func authorizationOk(conn *mongo.Client, email string, password string, coll *mongo.Collection) *usersmodels.User {
+func authorizationOk(email string, password string, coll *mongo.Collection) *usersmodels.User {
 
 	filter := bson.D{
 		{Key: "email", Value: email},
@@ -660,7 +660,7 @@ func authorizationOk(conn *mongo.Client, email string, password string, coll *mo
 	return &result
 }
 
-func getUserFromToken(conn *mongo.Client, token string) (usersmodels.User, *systemmodels.Error) {
+func getUserFromToken(conn *mongo.Client, token string) (usersmodels.User, *apimodels.Error) {
 
 	// Connect database
 
@@ -670,7 +670,7 @@ func getUserFromToken(conn *mongo.Client, token string) (usersmodels.User, *syst
 	err := devices.FindOne(database.GetDefaultContext(), bson.M{"token": token}).Decode(&tokenDevice)
 
 	if err != nil {
-		return usersmodels.User{}, &systemmodels.Error{
+		return usersmodels.User{}, &apimodels.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
 			Error:   valerror.INVALID_TOKEN,
 			Message: "User not matching token",
@@ -683,7 +683,7 @@ func getUserFromToken(conn *mongo.Client, token string) (usersmodels.User, *syst
 	err = users.FindOne(database.GetDefaultContext(), bson.M{"email": tokenDevice.User}).Decode(&tokenUser)
 
 	if err != nil {
-		return usersmodels.User{}, &systemmodels.Error{
+		return usersmodels.User{}, &apimodels.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
 			Error:   valerror.INVALID_TOKEN,
 			Message: "User not matching token",
@@ -693,13 +693,13 @@ func getUserFromToken(conn *mongo.Client, token string) (usersmodels.User, *syst
 	return tokenUser, nil
 }
 
-func IsTokenValid(conn *mongo.Client, token string) (*usersmodels.User, *systemmodels.Error) {
+func IsTokenValid(conn *mongo.Client, token string) (*usersmodels.User, *apimodels.Error) {
 
 	// decode token
 	claims, err := utils.DecryptToken(token, configuration.Params.Secret)
 
 	if err != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
 			Error:   valerror.INVALID_TOKEN,
 			Message: "invalid token format",
@@ -716,7 +716,7 @@ func IsTokenValid(conn *mongo.Client, token string) (*usersmodels.User, *systemm
 	foundUser, tokenUserErr := getUserFromToken(conn, token)
 
 	if tokenUserErr != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
 			Error:   valerror.INVALID_TOKEN,
 			Message: "invalid token",
@@ -724,7 +724,7 @@ func IsTokenValid(conn *mongo.Client, token string) (*usersmodels.User, *systemm
 	}
 
 	if foundUser.Email != email {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_FORBIDDEN,
 			Error:   valerror.INVALID_TOKEN,
 			Message: "invalid token",

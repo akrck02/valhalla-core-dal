@@ -4,8 +4,8 @@ import (
 	"github.com/akrck02/valhalla-core-dal/database"
 	userdal "github.com/akrck02/valhalla-core-dal/services/user"
 	"github.com/akrck02/valhalla-core-sdk/http"
+	apimodels "github.com/akrck02/valhalla-core-sdk/models/api"
 	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
-	systemmodels "github.com/akrck02/valhalla-core-sdk/models/system"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
 	"github.com/akrck02/valhalla-core-sdk/valerror"
@@ -14,11 +14,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
+func CreateProject(conn *mongo.Client, project *projectmodels.Project) *apimodels.Error {
 
 	// if the project name is empty, return an error
 	if utils.IsEmpty(project.Name) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_PROJECT_NAME,
 			Message: "Project name cannot be empty",
@@ -27,7 +27,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 
 	// if the project description is empty, return an error
 	if utils.IsEmpty(project.Description) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_PROJECT_DESCRIPTION,
 			Message: "Project description cannot be empty",
@@ -36,7 +36,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 
 	// if the project owner is empty, return an error
 	if utils.IsEmpty(project.Owner) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_PROJECT_OWNER,
 			Message: "Owner cannot be empty",
@@ -52,7 +52,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 	// convert the owner ID to an object ID
 	_, parsingError := utils.StringToObjectId(owner.ID)
 	if parsingError != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid ID",
@@ -65,7 +65,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 	found := projectNameExists(coll, project.Name, owner.ID)
 
 	if found {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_CONFLICT,
 			Error:   valerror.PROJECT_ALREADY_EXISTS,
 			Message: "Project already exists",
@@ -79,7 +79,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 	insertResult, insertError := coll.InsertOne(database.GetDefaultContext(), project)
 
 	if insertError != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.UNEXPECTED_ERROR,
 			Message: insertError.Error(),
@@ -87,7 +87,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 	}
 
 	if insertResult.InsertedID == nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.UNEXPECTED_ERROR,
 			Message: "Project not created",
@@ -97,14 +97,14 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 	return nil
 }
 
-func EditProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
+func EditProject(conn *mongo.Client, project *projectmodels.Project) *apimodels.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
 	objID, err := utils.StringToObjectId(project.ID)
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -123,7 +123,7 @@ func EditProject(conn *mongo.Client, project *projectmodels.Project) *systemmode
 
 	// Check if team was updated
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not update team: " + err.Error(),
@@ -133,14 +133,14 @@ func EditProject(conn *mongo.Client, project *projectmodels.Project) *systemmode
 	return nil
 }
 
-func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmodels.Error {
+func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *apimodels.Error {
 
 	// Connect database
 	var client = database.Connect()
 	defer database.Disconnect(*client)
 
 	if utils.IsEmpty(project.Name) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_PROJECT_NAME,
 			Message: "Project name cannot be empty",
@@ -150,7 +150,7 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 	// Check if the project ID is valid
 	id, parsingError := utils.StringToObjectId(project.ID)
 	if parsingError != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid ID",
@@ -163,7 +163,7 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 
 	// If an error occurs, return the error
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.PROJECT_NOT_DELETED,
 			Message: "Project not deleted",
@@ -172,7 +172,7 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 
 	// If the project is not found, return an error
 	if deleteResult.DeletedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.PROJECT_NOT_FOUND,
 			Message: "Project not found",
@@ -182,7 +182,7 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *systemmo
 	return nil
 }
 
-func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmodels.Project, *systemmodels.Error) {
+func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmodels.Project, *apimodels.Error) {
 
 	// Connect database
 	var client = database.Connect()
@@ -191,7 +191,7 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 	// Check if the project ID is valid
 	projectIdObject, parsingError := utils.StringToObjectId(project.ID)
 	if parsingError != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid ID",
@@ -205,7 +205,7 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 
 	// If an error occurs, return the error
 	if err != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.UNEXPECTED_ERROR,
 			Message: err.Error(),
@@ -214,7 +214,7 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 
 	// If the project is not found, return an error
 	if utils.IsEmpty(found.ID) {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_NOT_FOUND,
 			Error:   valerror.PROJECT_NOT_FOUND,
 			Message: "Project not found",

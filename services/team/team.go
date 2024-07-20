@@ -3,7 +3,7 @@ package teamdal
 import (
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-sdk/http"
-	systemmodels "github.com/akrck02/valhalla-core-sdk/models/system"
+	apimodels "github.com/akrck02/valhalla-core-sdk/models/api"
 	teammodels "github.com/akrck02/valhalla-core-sdk/models/team"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
@@ -19,11 +19,11 @@ type MemberChangeRequest struct {
 	User string `json:"userid"`
 }
 
-func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
+func CreateTeam(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 
 	// Check if team name is empty
 	if utils.IsEmpty(team.Name) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_TEAM_NAME,
 			Message: "Team cannot be nameless",
@@ -34,7 +34,7 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 	checkedName := utils.ValidateName(team.Name)
 
 	if checkedName.Response != http.HTTP_STATUS_OK {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   checkedName.Response,
 			Message: checkedName.Message,
@@ -43,7 +43,7 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Check if team description is empty
 	if utils.IsEmpty(team.Description) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.EMPTY_TEAM_DESCRIPTION,
 			Message: "Team cannot be descriptionless",
@@ -54,7 +54,7 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 	checkedDescription := utils.ValidateDescription(team.Description)
 
 	if checkedDescription.Response != http.HTTP_STATUS_OK {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   checkedDescription.Response,
 			Message: checkedDescription.Message,
@@ -70,7 +70,7 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Check if team owner is empty
 	if utils.IsEmpty(team.Owner) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.NO_OWNER,
 			Message: "Team requires an owner",
@@ -82,7 +82,7 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 	found := teamExists(coll, team)
 
 	if found.Name != "" {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.TEAM_ALREADY_EXISTS,
 			Message: "Team already exists with name " + team.Name,
@@ -98,7 +98,7 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 	res, err2 := coll.InsertOne(database.GetDefaultContext(), team)
 
 	if err2 != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.TEAM_ALREADY_EXISTS,
 			Message: "Team already exists",
@@ -109,14 +109,14 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 	return nil
 }
 
-func DeleteTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
+func DeleteTeam(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
 	objID, err := utils.StringToObjectId(team.ID)
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -129,7 +129,7 @@ func DeleteTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Check if team was deleted
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.TEAM_NOT_FOUND,
 			Message: "Team not found",
@@ -139,14 +139,14 @@ func DeleteTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 	return nil
 }
 
-func EditTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
+func EditTeam(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
 	objID, err := utils.StringToObjectId(team.ID)
 
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -168,7 +168,7 @@ func EditTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 
 	// Check if team was updated
 	if err != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not update team: " + err.Error(),
@@ -178,11 +178,11 @@ func EditTeam(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
 	return nil
 }
 
-func EditTeamOwner(conn *mongo.Client, team *teammodels.Team) *systemmodels.Error {
+func EditTeamOwner(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 
 	// Check if team owner is empty
 	if utils.IsEmpty(team.Owner) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.NO_OWNER,
 			Message: "Team requires an owner",
@@ -194,7 +194,7 @@ func EditTeamOwner(conn *mongo.Client, team *teammodels.Team) *systemmodels.Erro
 	objID, err1 := utils.StringToObjectId(team.ID)
 
 	if err1 != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -224,7 +224,7 @@ func EditTeamOwner(conn *mongo.Client, team *teammodels.Team) *systemmodels.Erro
 	err3 := result.Err()
 
 	if err3 != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not change owner",
@@ -234,11 +234,11 @@ func EditTeamOwner(conn *mongo.Client, team *teammodels.Team) *systemmodels.Erro
 	return nil
 }
 
-func AddMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Error {
+func AddMember(conn *mongo.Client, member *MemberChangeRequest) *apimodels.Error {
 
 	// Check if member is empty
 	if utils.IsEmpty(member.User) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.MEMBER_PARAMETER_EMPTY,
 			Message: "Adding a member requires a member",
@@ -247,7 +247,7 @@ func AddMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Er
 
 	// Check if team is empty
 	if utils.IsEmpty(member.Team) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.TEAM_PARAMETER_EMPTY,
 			Message: "Adding a member requires a team",
@@ -266,7 +266,7 @@ func AddMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Er
 	objID, parseErr := utils.StringToObjectId(member.Team)
 
 	if parseErr != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -277,7 +277,7 @@ func AddMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Er
 	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 
 	if isUserMemberOrOwner(conn, member) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.USER_ALREADY_MEMBER,
 			Message: "User is already a member of the team",
@@ -288,7 +288,7 @@ func AddMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Er
 	result, parseErr := coll.UpdateByID(database.GetDefaultContext(), objID, bson.M{"$push": bson.M{"members": member.User}})
 
 	if parseErr != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not add member",
@@ -297,7 +297,7 @@ func AddMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Er
 
 	// Check if member was added
 	if result.MatchedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_NO_CHANGE,
 			Error:   valerror.TEAM_NOT_FOUND,
 			Message: "Team member not added",
@@ -307,11 +307,11 @@ func AddMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Er
 	return nil
 }
 
-func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels.Error {
+func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *apimodels.Error {
 
 	// Check if member is empty
 	if utils.IsEmpty(member.User) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.MEMBER_PARAMETER_EMPTY,
 			Message: "Adding a member requires a member",
@@ -320,7 +320,7 @@ func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels
 
 	// Check if team is empty
 	if utils.IsEmpty(member.Team) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.TEAM_PARAMETER_EMPTY,
 			Message: "Adding a member requires a team",
@@ -332,7 +332,7 @@ func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels
 	objID, parseErr := utils.StringToObjectId(member.Team)
 
 	if parseErr != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -348,7 +348,7 @@ func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels
 
 	// deleting team owner is not allowed
 	if isOwner(conn, member) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.CANNOT_DELETE_TEAM_OWNER,
 			Message: "User is owner of the team",
@@ -357,7 +357,7 @@ func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels
 
 	// Check if member is in team
 	if !isMember(conn, member) {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.USER_NOT_MEMBER_OF_THE_TEAM,
 			Message: "User is not a member of the team",
@@ -367,7 +367,7 @@ func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels
 	// Remove member from team
 	result, parseErr := conn.Database(database.CurrentDatabase).Collection(database.TEAM).UpdateByID(database.GetDefaultContext(), objID, bson.M{"$pull": bson.M{"members": member.User}})
 	if parseErr != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.UPDATE_ERROR,
 			Message: "Could not remove member",
@@ -376,7 +376,7 @@ func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels
 
 	// Check if member was removed
 	if result.MatchedCount == 0 {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_NO_CHANGE,
 			Error:   valerror.TEAM_NOT_FOUND,
 			Message: "Team member not removed",
@@ -386,14 +386,14 @@ func RemoveMember(conn *mongo.Client, member *MemberChangeRequest) *systemmodels
 	return nil
 }
 
-func GetTeams(conn *mongo.Client, user *usersmodels.User) ([]*teammodels.Team, *systemmodels.Error) {
+func GetTeams(conn *mongo.Client, user *usersmodels.User) ([]*teammodels.Team, *apimodels.Error) {
 
 	// Get the teams that the user owns
 	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
 	teamsCursor, err := coll.Find(database.GetDefaultContext(), bson.M{"owner": user.ID})
 
 	if err != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 			Error:   valerror.UNEXPECTED_ERROR,
 			Message: "Cannot find teams",
@@ -406,7 +406,7 @@ func GetTeams(conn *mongo.Client, user *usersmodels.User) ([]*teammodels.Team, *
 		var team teammodels.Team
 		err := teamsCursor.Decode(&team)
 		if err != nil {
-			return nil, &systemmodels.Error{
+			return nil, &apimodels.Error{
 				Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
 				Error:   valerror.UNEXPECTED_ERROR,
 				Message: "Cannot find teams",
@@ -420,12 +420,12 @@ func GetTeams(conn *mongo.Client, user *usersmodels.User) ([]*teammodels.Team, *
 	return teams, nil
 }
 
-func GetTeam(conn *mongo.Client, team *teammodels.Team) (*teammodels.Team, *systemmodels.Error) {
+func GetTeam(conn *mongo.Client, team *teammodels.Team) (*teammodels.Team, *apimodels.Error) {
 
 	objID, err1 := utils.StringToObjectId(team.ID)
 
 	if err1 != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -438,7 +438,7 @@ func GetTeam(conn *mongo.Client, team *teammodels.Team) (*teammodels.Team, *syst
 	err2 := coll.FindOne(database.GetDefaultContext(), bson.M{"_id": objID}).Decode(&foundTeam)
 
 	if err2 != nil {
-		return nil, &systemmodels.Error{
+		return nil, &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.TEAM_NOT_FOUND,
 			Message: "Team not found",
@@ -448,14 +448,14 @@ func GetTeam(conn *mongo.Client, team *teammodels.Team) (*teammodels.Team, *syst
 	return &foundTeam, nil
 }
 
-func SearchTeams(searchText *string) (*[]teammodels.Team, *systemmodels.Error) {
+func SearchTeams(searchText *string) (*[]teammodels.Team, *apimodels.Error) {
 
 	foundTeams := []teammodels.Team{}
 	return &foundTeams, nil
 
 }
 
-func userExists(conn *mongo.Client, user string) *systemmodels.Error {
+func userExists(conn *mongo.Client, user string) *apimodels.Error {
 
 	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	var foundUser usersmodels.User
@@ -463,7 +463,7 @@ func userExists(conn *mongo.Client, user string) *systemmodels.Error {
 	objID, err1 := utils.StringToObjectId(user)
 
 	if err1 != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.INVALID_OBJECT_ID,
 			Message: "Invalid object id",
@@ -473,7 +473,7 @@ func userExists(conn *mongo.Client, user string) *systemmodels.Error {
 	err2 := coll.FindOne(database.GetDefaultContext(), bson.M{"_id": objID}).Decode(&foundUser)
 
 	if err2 != nil {
-		return &systemmodels.Error{
+		return &apimodels.Error{
 			Status:  http.HTTP_STATUS_BAD_REQUEST,
 			Error:   valerror.OWNER_DOESNT_EXIST,
 			Message: "User doesn't exists",
