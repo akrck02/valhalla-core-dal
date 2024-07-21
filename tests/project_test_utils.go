@@ -16,7 +16,7 @@ func CreateMockTestProjectWithUser(conn *mongo.Client, t *testing.T, user *users
 	project := &projectmodels.Project{
 		Name:        mock.ProjectName(),
 		Description: mock.ProjectDescription(),
-		Owner:       user.Email,
+		Owner:       user.ID,
 	}
 
 	return CreateTestProjectWithUser(conn, t, project, user)

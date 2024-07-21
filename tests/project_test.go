@@ -18,8 +18,17 @@ func TestCreateProject(t *testing.T) {
 	defer conn.Disconnect(context.Background())
 
 	user := RegisterMockTestUser(conn, t)
-	CreateMockTestProjectWithUser(conn, t, user)
-	DeleteTestUser(conn, t, user)
+	project := CreateMockTestProjectWithUser(conn, t, user)
+
+	if project == nil {
+		t.Errorf("Error creating project")
+		return
+	}
+
+	if project.CreationDate == nil || project.LastUpdate == nil {
+		t.Errorf("Error creating project, dates not set")
+		return
+	}
 
 }
 
@@ -82,23 +91,47 @@ func TestGetUserProjects(t *testing.T) {
 	project := CreateMockTestProjectWithUser(conn, t, user)
 	project2 := CreateMockTestProjectWithUser(conn, t, user)
 
-	projects := projectdal.GetUserProjects(conn, user.Email)
+	projects := projectdal.GetUserProjects(conn, user.ID)
 
 	if len(projects) == 0 {
-		t.Errorf("No projects found for user: %v", user.Email)
+		t.Errorf("No projects found for user: %v", user.ID)
+		return
 	}
 
 	if len(projects) != 2 {
-		t.Errorf("Incorrect number of projects found for user: %v", user.Email)
+		t.Errorf("Incorrect number of projects found for user: %v", user.ID)
+		return
 	}
 
 	if projects[0].Name != project.Name {
 		t.Errorf("Incorrect project found: %v", projects[0].Name)
+		return
 	}
 
 	if projects[1].Name != project2.Name {
 		t.Errorf("Incorrect project found: %v", projects[1].Name)
+		return
 	}
 
 	DeleteTestUser(conn, t, user)
+}
+
+func TestEditProject(t *testing.T) {
+
+	conn := database.Connect()
+	defer conn.Disconnect(context.Background())
+
+	user := RegisterMockTestUser(conn, t)
+	project := CreateMockTestProjectWithUser(conn, t, user)
+
+	if project == nil {
+		t.Errorf("Error creating project")
+		return
+	}
+
+	if project.CreationDate == nil || project.LastUpdate == nil {
+		t.Errorf("Error creating project, dates not set")
+		return
+	}
+
 }

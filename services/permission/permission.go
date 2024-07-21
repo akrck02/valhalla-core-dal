@@ -5,12 +5,14 @@ import (
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 )
 
+// Users
+
 func CanEditUser(author *usersmodels.User, user *usersmodels.User) bool {
-	return author.Email == user.Email
+	return author.ID == user.ID
 }
 
 func CanSeeUser(author *usersmodels.User, user *usersmodels.User) bool {
-	return author.Email == user.Email
+	return author.ID == user.ID
 }
 func CanDeleteProject(logedUser *usersmodels.User, project *projectmodels.Project) bool {
 	return logedUser.ID == project.Owner
@@ -18,11 +20,10 @@ func CanDeleteProject(logedUser *usersmodels.User, project *projectmodels.Projec
 
 //Projects
 
-// func CanEditProject(author *models.Project, user *models.Project) bool {
+func CanEditProject(user *usersmodels.User, project *projectmodels.Project) bool {
+	return user.ID == project.Owner
+}
 
-// 	return author.Email == user.Email
-// }
-
-// func CanSeeProject(author *models.Project, user *models.Project) bool {
-// 	return author.Email == user.Email
-// }
+func CanSeeProject(user *usersmodels.User, project *projectmodels.Project) bool {
+	return user.ID == project.Owner
+}
