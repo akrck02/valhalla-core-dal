@@ -2,14 +2,15 @@ package tests
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/akrck02/valhalla-core-dal/database"
 	"github.com/akrck02/valhalla-core-dal/mock"
 	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
-	"github.com/akrck02/valhalla-core-sdk/http"
+
+	apierror "github.com/akrck02/valhalla-core-sdk/error"
 	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
-	"github.com/akrck02/valhalla-core-sdk/valerror"
 )
 
 func TestCreateProject(t *testing.T) {
@@ -42,7 +43,7 @@ func TestCreateProjectWithoutOwner(t *testing.T) {
 		Description: "Test Description",
 	}
 
-	CreateTestProjectWithError(conn, t, &project, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_PROJECT_OWNER)
+	CreateTestProjectWithError(conn, t, &project, http.StatusBadRequest, apierror.EmptyProjectOwner)
 }
 
 func TestCreateProjectWithoutName(t *testing.T) {
@@ -55,7 +56,7 @@ func TestCreateProjectWithoutName(t *testing.T) {
 		Owner:       mock.Email(),
 	}
 
-	CreateTestProjectWithError(conn, t, project, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_PROJECT_NAME)
+	CreateTestProjectWithError(conn, t, project, http.StatusBadRequest, apierror.EmptyProjectName)
 }
 func TestCreateProjectWithoutDescription(t *testing.T) {
 
@@ -67,7 +68,7 @@ func TestCreateProjectWithoutDescription(t *testing.T) {
 		Owner: mock.Email(),
 	}
 
-	CreateTestProjectWithError(conn, t, project, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_PROJECT_DESCRIPTION)
+	CreateTestProjectWithError(conn, t, project, http.StatusBadRequest, apierror.EmptyProjectDescription)
 }
 
 func TestCreateProjectThatAlreadyExists(t *testing.T) {
@@ -78,7 +79,7 @@ func TestCreateProjectThatAlreadyExists(t *testing.T) {
 	user := RegisterMockTestUser(conn, t)
 	project := CreateMockTestProjectWithUser(conn, t, user)
 
-	CreateTestProjectWithError(conn, t, project, http.HTTP_STATUS_CONFLICT, valerror.PROJECT_ALREADY_EXISTS)
+	CreateTestProjectWithError(conn, t, project, http.StatusConflict, apierror.ProjectAlreadyExists)
 	DeleteTestUser(conn, t, user)
 }
 

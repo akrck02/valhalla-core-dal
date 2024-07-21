@@ -2,14 +2,15 @@ package tests
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/akrck02/valhalla-core-dal/database"
 	userdal "github.com/akrck02/valhalla-core-dal/services/user"
-	"github.com/akrck02/valhalla-core-sdk/http"
+	apierror "github.com/akrck02/valhalla-core-sdk/error"
+
 	"github.com/akrck02/valhalla-core-sdk/log"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
-	"github.com/akrck02/valhalla-core-sdk/valerror"
 
 	"github.com/akrck02/valhalla-core-dal/mock"
 )
@@ -47,7 +48,7 @@ func TestRegisterNotEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USER_EMAIL)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.EmptyUserEmail)
 }
 
 func TestRegisterNotUsername(t *testing.T) {
@@ -60,7 +61,7 @@ func TestRegisterNotUsername(t *testing.T) {
 		Password: mock.Password(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USERNAME)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.EmptyUsername)
 }
 
 func TestRegisterNotPassword(t *testing.T) {
@@ -73,7 +74,7 @@ func TestRegisterNotPassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USER_PASSWORD)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.EmptyUserPassword)
 }
 
 func TestRegisterNotDotEmail(t *testing.T) {
@@ -87,7 +88,7 @@ func TestRegisterNotDotEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_DOT_EMAIL)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoDotEmail)
 }
 
 func TestRegisterNotAtEmail(t *testing.T) {
@@ -101,7 +102,7 @@ func TestRegisterNotAtEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_AT_EMAIL)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoAtEmail)
 }
 
 func TestRegisterShortMail(t *testing.T) {
@@ -115,7 +116,7 @@ func TestRegisterShortMail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.SHORT_EMAIL)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.ShortEmail)
 }
 
 func TestRegisterNotSpecialCharactersPassword(t *testing.T) {
@@ -129,7 +130,7 @@ func TestRegisterNotSpecialCharactersPassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_SPECIAL_CHARACTERS_PASSWORD)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoSpecialCharactersPassword)
 }
 
 func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
@@ -143,7 +144,7 @@ func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_UPPER_LOWER_PASSWORD)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoMayusMinusPassword)
 
 	user = &usersmodels.User{
 		Email:    mock.Email(),
@@ -151,7 +152,7 @@ func TestRegisterNotUpperCaseLowerCasePassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_UPPER_LOWER_PASSWORD)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoMayusMinusPassword)
 }
 
 func TestRegisterShortPassword(t *testing.T) {
@@ -165,7 +166,7 @@ func TestRegisterShortPassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.SHORT_PASSWORD)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.ShortPassword)
 }
 
 func TestRegisterNotNumbersPassword(t *testing.T) {
@@ -179,7 +180,7 @@ func TestRegisterNotNumbersPassword(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	RegisterTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_ALPHANUMERIC_PASSWORD)
+	RegisterTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoAlphanumericPassword)
 }
 
 func TestLogin(t *testing.T) {
@@ -202,7 +203,7 @@ func TestLoginWrongPassword(t *testing.T) {
 
 	log.Info("Login with wrong password")
 	log.FormattedInfo("Password: ${0}", user.Password)
-	LoginTestUserWithError(conn, t, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, valerror.USER_NOT_AUTHORIZED)
+	LoginTestUserWithError(conn, t, user, mock.Ip(), mock.Platform(), http.StatusForbidden, apierror.UserNotAuthorized)
 
 }
 
@@ -213,7 +214,7 @@ func TestLoginWrongEmail(t *testing.T) {
 
 	user := RegisterMockTestUser(conn, t)
 	user.Email = "wrong" + mock.Email()
-	LoginTestUserWithError(conn, t, user, mock.Ip(), mock.Platform(), http.HTTP_STATUS_FORBIDDEN, valerror.USER_NOT_AUTHORIZED)
+	LoginTestUserWithError(conn, t, user, mock.Ip(), mock.Platform(), http.StatusForbidden, apierror.UserNotAuthorized)
 }
 
 func TestLoginAuth(t *testing.T) {
@@ -245,7 +246,7 @@ func TestDeleteUserNoEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	DeleteTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USER_EMAIL)
+	DeleteTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.EmptyUserEmail)
 }
 
 func TestDeleteUserNotFound(t *testing.T) {
@@ -259,7 +260,7 @@ func TestDeleteUserNotFound(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	DeleteTestUserWithError(conn, t, user, http.HTTP_STATUS_NOT_FOUND, valerror.USER_NOT_FOUND)
+	DeleteTestUserWithError(conn, t, user, http.StatusNotFound, apierror.UserNotFound)
 }
 
 func TestEditUserEmail(t *testing.T) {
@@ -308,7 +309,7 @@ func TestEditUserEmailNoEmail(t *testing.T) {
 	defer conn.Disconnect(context.Background())
 
 	emailChangeRequest := userdal.EmailChangeRequest{}
-	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.EMPTY_USER_EMAIL)
+	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.StatusBadRequest, apierror.EmptyUserEmail)
 
 }
 
@@ -325,7 +326,7 @@ func TestEditUserEmailNoDotEmail(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_DOT_EMAIL)
+	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.StatusBadRequest, apierror.NoDotEmail)
 
 }
 
@@ -342,7 +343,7 @@ func TestEditUserEmailNoAtEmail(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_AT_EMAIL)
+	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.StatusBadRequest, apierror.NoAtEmail)
 
 }
 
@@ -359,7 +360,7 @@ func TestEditUserEmailShortEmail(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.SHORT_EMAIL)
+	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.StatusBadRequest, apierror.ShortEmail)
 
 }
 
@@ -376,7 +377,7 @@ func TestEditUserEmailNotFound(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.HTTP_STATUS_NOT_FOUND, valerror.USER_NOT_FOUND)
+	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.StatusNotFound, apierror.UserNotFound)
 }
 
 func TestEditUserEmailExists(t *testing.T) {
@@ -413,7 +414,7 @@ func TestEditUserEmailExists(t *testing.T) {
 		NewEmail: newEmail,
 	}
 
-	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.HTTP_STATUS_CONFLICT, valerror.USER_ALREADY_EXISTS)
+	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.StatusConflict, apierror.UserAlreadyExists)
 }
 
 func TestEditUserSameEmail(t *testing.T) {
@@ -427,7 +428,7 @@ func TestEditUserSameEmail(t *testing.T) {
 		NewEmail: email,
 	}
 
-	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.HTTP_STATUS_BAD_REQUEST, valerror.USER_EDITING_EMAILS_EQUAL)
+	EditTestUserEmailWithError(conn, t, &emailChangeRequest, http.StatusBadRequest, apierror.UpdateParametersEqual)
 }
 
 func TestEditUserPassword(t *testing.T) {
@@ -468,7 +469,7 @@ func TestEditUserPasswordUserNotFound(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_NOT_FOUND, valerror.USER_NOT_FOUND)
+	EditTestUserWithError(conn, t, user, http.StatusNotFound, apierror.UserNotFound)
 }
 
 func TestEditUserPasswordShort(t *testing.T) {
@@ -479,7 +480,7 @@ func TestEditUserPasswordShort(t *testing.T) {
 
 	// change the user password
 	user.Password = mock.PasswordShort()
-	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.SHORT_PASSWORD)
+	EditTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.ShortPassword)
 }
 
 func TestEditUserPasswordNoLowercase(t *testing.T) {
@@ -490,7 +491,7 @@ func TestEditUserPasswordNoLowercase(t *testing.T) {
 
 	// change the user password
 	user.Password = mock.PasswordNotLowerCase()
-	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_UPPER_LOWER_PASSWORD)
+	EditTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoMayusMinusPassword)
 }
 
 func TestEditUserPasswordNoUppercase(t *testing.T) {
@@ -501,7 +502,7 @@ func TestEditUserPasswordNoUppercase(t *testing.T) {
 
 	// change the user password
 	user.Password = mock.PasswordNotUpperCase()
-	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_UPPER_LOWER_PASSWORD)
+	EditTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoMayusMinusPassword)
 }
 
 func TestEditUserPasswordNoNumber(t *testing.T) {
@@ -512,7 +513,7 @@ func TestEditUserPasswordNoNumber(t *testing.T) {
 
 	// change the user password
 	user.Password = mock.PasswordNotNumber()
-	EditTestUserWithError(conn, t, user, http.HTTP_STATUS_BAD_REQUEST, valerror.NO_ALPHANUMERIC_PASSWORD)
+	EditTestUserWithError(conn, t, user, http.StatusBadRequest, apierror.NoAlphanumericPassword)
 }
 
 // func TestEditProfilePicture(t *testing.T) {
@@ -553,7 +554,7 @@ func TestTokenValidationInvalidToken(t *testing.T) {
 	defer conn.Disconnect(context.Background())
 
 	// Create a fake token
-	ValidateTestTokenWithError(conn, t, mock.Token(), http.HTTP_STATUS_FORBIDDEN, valerror.INVALID_TOKEN)
+	ValidateTestTokenWithError(conn, t, mock.Token(), http.StatusForbidden, apierror.InvalidToken)
 
 }
 
@@ -564,7 +565,7 @@ func TestTokenValidationInvalidTokenFormat(t *testing.T) {
 
 	// Create a fake token
 	token := mock.Username()
-	ValidateTestTokenWithError(conn, t, token, http.HTTP_STATUS_FORBIDDEN, valerror.INVALID_TOKEN)
+	ValidateTestTokenWithError(conn, t, token, http.StatusForbidden, apierror.InvalidToken)
 
 }
 
@@ -574,7 +575,7 @@ func TestTokenValidationEmptyToken(t *testing.T) {
 	defer conn.Disconnect(context.Background())
 
 	// Create a fake token
-	ValidateTestTokenWithError(conn, t, "", http.HTTP_STATUS_FORBIDDEN, valerror.INVALID_TOKEN)
+	ValidateTestTokenWithError(conn, t, "", http.StatusForbidden, apierror.InvalidToken)
 }
 
 func TestValidationCode(t *testing.T) {
