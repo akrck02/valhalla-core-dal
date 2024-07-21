@@ -1,14 +1,16 @@
 package projectdal
 
 import (
+	"net/http"
+
 	"github.com/akrck02/valhalla-core-dal/database"
 	userdal "github.com/akrck02/valhalla-core-dal/services/user"
-	"github.com/akrck02/valhalla-core-sdk/http"
+
+	apierror "github.com/akrck02/valhalla-core-sdk/error"
 	apimodels "github.com/akrck02/valhalla-core-sdk/models/api"
 	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
-	"github.com/akrck02/valhalla-core-sdk/valerror"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,8 +21,8 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 	// if the project name is empty, return an error
 	if utils.IsEmpty(project.Name) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_PROJECT_NAME,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyProjectName,
 			Message: "Project name cannot be empty",
 		}
 	}
@@ -28,8 +30,8 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 	// if the project description is empty, return an error
 	if utils.IsEmpty(project.Description) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_PROJECT_DESCRIPTION,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyProjectDescription,
 			Message: "Project description cannot be empty",
 		}
 	}
@@ -37,8 +39,8 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 	// if the project owner is empty, return an error
 	if utils.IsEmpty(project.Owner) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_PROJECT_OWNER,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyProjectOwner,
 			Message: "Owner cannot be empty",
 		}
 	}
@@ -53,8 +55,8 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 	_, parsingError := utils.StringToObjectId(owner.ID)
 	if parsingError != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.INVALID_OBJECT_ID,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidObjectId,
 			Message: "Invalid ID",
 		}
 	}
@@ -66,8 +68,8 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 
 	if found {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_CONFLICT,
-			Error:   valerror.PROJECT_ALREADY_EXISTS,
+			Status:  http.StatusConflict,
+			Error:   apierror.ProjectAlreadyExists,
 			Message: "Project already exists",
 		}
 	}
@@ -80,16 +82,16 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 
 	if insertError != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.UNEXPECTED_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UnexpectedError,
 			Message: insertError.Error(),
 		}
 	}
 
 	if insertResult.InsertedID == nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.UNEXPECTED_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UnexpectedError,
 			Message: "Project not created",
 		}
 	}
@@ -105,8 +107,8 @@ func EditProject(conn *mongo.Client, project *projectmodels.Project) *apimodels.
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.INVALID_OBJECT_ID,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidObjectId,
 			Message: "Invalid object id",
 		}
 	}
@@ -124,8 +126,8 @@ func EditProject(conn *mongo.Client, project *projectmodels.Project) *apimodels.
 	// Check if team was updated
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.UPDATE_ERROR,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.DatabaseError,
 			Message: "Could not update team: " + err.Error(),
 		}
 	}
@@ -141,8 +143,8 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 
 	if utils.IsEmpty(project.Name) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_PROJECT_NAME,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyProjectName,
 			Message: "Project name cannot be empty",
 		}
 	}
@@ -151,8 +153,8 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 	id, parsingError := utils.StringToObjectId(project.ID)
 	if parsingError != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.INVALID_OBJECT_ID,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidObjectId,
 			Message: "Invalid ID",
 		}
 	}
@@ -164,8 +166,8 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 	// If an error occurs, return the error
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.PROJECT_NOT_DELETED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "Project not deleted",
 		}
 	}
@@ -173,8 +175,8 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 	// If the project is not found, return an error
 	if deleteResult.DeletedCount == 0 {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.PROJECT_NOT_FOUND,
+			Status:  http.StatusNotFound,
+			Error:   apierror.ProjectNotFound,
 			Message: "Project not found",
 		}
 	}
@@ -192,8 +194,8 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 	projectIdObject, parsingError := utils.StringToObjectId(project.ID)
 	if parsingError != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.INVALID_OBJECT_ID,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidObjectId,
 			Message: "Invalid ID",
 		}
 	}
@@ -206,8 +208,8 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 	// If an error occurs, return the error
 	if err != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.UNEXPECTED_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UnexpectedError,
 			Message: err.Error(),
 		}
 	}
@@ -215,8 +217,8 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 	// If the project is not found, return an error
 	if utils.IsEmpty(found.ID) {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.PROJECT_NOT_FOUND,
+			Status:  http.StatusNotFound,
+			Error:   apierror.ProjectNotFound,
 			Message: "Project not found",
 		}
 	}

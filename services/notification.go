@@ -1,7 +1,8 @@
 package services
 
 import (
-	"github.com/akrck02/valhalla-core-sdk/http"
+	"net/http"
+
 	apimodels "github.com/akrck02/valhalla-core-sdk/models/api"
 	teammodels "github.com/akrck02/valhalla-core-sdk/models/team"
 )
@@ -14,7 +15,7 @@ type Alert struct {
 func AlertTeam(team teammodels.Team) *apimodels.Error {
 
 	return &apimodels.Error{
-		Status:  http.HTTP_STATUS_OK,
+		Status:  http.StatusOK,
 		Message: "Ok.",
 	}
 }

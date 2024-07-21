@@ -5,6 +5,7 @@ import (
 
 	"github.com/akrck02/valhalla-core-dal/mock"
 	projectdal "github.com/akrck02/valhalla-core-dal/services/project"
+	apierror "github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	projectmodels "github.com/akrck02/valhalla-core-sdk/models/project"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
@@ -36,7 +37,7 @@ func CreateTestProjectWithUser(conn *mongo.Client, t *testing.T, project *projec
 	return project
 }
 
-func CreateTestProjectWithError(conn *mongo.Client, t *testing.T, project *projectmodels.Project, status int, errorcode int) {
+func CreateTestProjectWithError(conn *mongo.Client, t *testing.T, project *projectmodels.Project, status int, errorcode apierror.ApiError) {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
 	err := projectdal.CreateProject(conn, project)

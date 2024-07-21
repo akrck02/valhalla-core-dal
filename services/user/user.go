@@ -1,16 +1,18 @@
 package userdal
 
 import (
+	"net/http"
+
 	"github.com/akrck02/valhalla-core-dal/configuration"
 	"github.com/akrck02/valhalla-core-dal/database"
 	devicedal "github.com/akrck02/valhalla-core-dal/services/device"
-	"github.com/akrck02/valhalla-core-sdk/http"
+
+	apierror "github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	apimodels "github.com/akrck02/valhalla-core-sdk/models/api"
 	devicemodels "github.com/akrck02/valhalla-core-sdk/models/device"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
-	"github.com/akrck02/valhalla-core-sdk/valerror"
 
 	"github.com/golang-jwt/jwt/v5"
 
@@ -28,56 +30,45 @@ func Register(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if utils.IsEmpty(user.Email) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_USER_EMAIL,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyUserEmail,
 			Message: "Email cannot be empty",
 		}
 	}
 
 	if utils.IsEmpty(user.Password) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_USER_PASSWORD,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyUserPassword,
 			Message: "Password cannot be empty",
 		}
 	}
 
 	if utils.IsEmpty(user.Username) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_USERNAME,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyUsername,
 			Message: "Username cannot be empty",
 		}
 	}
 
-	var checkedPass = utils.ValidatePassword(user.Password)
-
-	if checkedPass.Response != 200 {
-		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   int(checkedPass.Response),
-			Message: checkedPass.Message,
-		}
+	var checkedError = utils.ValidatePassword(user.Password)
+	if checkedError != nil {
+		return checkedError
 	}
 
-	checkedPass = utils.ValidateEmail(user.Email)
-
-	if checkedPass.Response != 200 {
-		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   checkedPass.Response,
-			Message: checkedPass.Message,
-		}
+	checkedError = utils.ValidateEmail(user.Email)
+	if checkedError != nil {
+		return checkedError
 	}
 
 	coll := conn.Database(database.CurrentDatabase).Collection(database.USER)
 	found := mailExists(user.Email, coll)
 
 	if found != nil {
-
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_CONFLICT,
-			Error:   valerror.USER_ALREADY_EXISTS,
+			Status:  http.StatusConflict,
+			Error:   apierror.UserAlreadyExists,
 			Message: "User already exists",
 		}
 	}
@@ -86,8 +77,8 @@ func Register(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.CANNOT_CREATE_VALIDATION_CODE,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.CannotCreateValidationCode,
 			Message: "User not created",
 		}
 	}
@@ -105,8 +96,8 @@ func Register(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if errInsert != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_CONFLICT,
-			Error:   valerror.USER_ALREADY_EXISTS,
+			Status:  http.StatusConflict,
+			Error:   apierror.UserAlreadyExists,
 			Message: "User already exists",
 		}
 	}
@@ -129,8 +120,8 @@ func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string
 
 	if found == nil {
 		return "", &apimodels.Error{
-			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   valerror.USER_NOT_AUTHORIZED,
+			Status:  http.StatusForbidden,
+			Error:   apierror.UserNotAuthorized,
 			Message: "Invalid credentials",
 		}
 	}
@@ -140,8 +131,8 @@ func Login(conn *mongo.Client, user *usersmodels.User, ip string, address string
 
 	if err != nil {
 		return "", &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.UNEXPECTED_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UnexpectedError,
 			Message: "Cannot generate your auth token",
 		}
 	}
@@ -172,8 +163,8 @@ func LoginAuth(conn *mongo.Client, auth *usersmodels.AuthLogin, ip string, userA
 
 	if deviceFindingError != nil || device == nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.USER_NOT_AUTHORIZED,
+			Status:  http.StatusNotFound,
+			Error:   apierror.UserNotAuthorized,
 			Message: "No possible login devices",
 		}
 	}
@@ -189,28 +180,20 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	// validate email
 	if user.Email != "" {
-		checkedPass := utils.ValidateEmail(user.Email)
+		checkedError := utils.ValidateEmail(user.Email)
 
-		if checkedPass.Response != 200 {
-			return &apimodels.Error{
-				Status:  http.HTTP_STATUS_BAD_REQUEST,
-				Error:   checkedPass.Response,
-				Message: checkedPass.Message,
-			}
+		if checkedError != nil {
+			return checkedError
 		}
 	}
 
 	// validate password
 	if user.Password != "" {
 
-		checkedPass := utils.ValidatePassword(user.Password)
+		checkedError := utils.ValidatePassword(user.Password)
 
-		if checkedPass.Response != 200 {
-			return &apimodels.Error{
-				Status:  http.HTTP_STATUS_BAD_REQUEST,
-				Error:   checkedPass.Response,
-				Message: checkedPass.Message,
-			}
+		if checkedError != nil {
+			return checkedError
 		}
 	}
 
@@ -237,16 +220,16 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_UPDATED,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.DatabaseError,
 			Message: "User not updated",
 		}
 	}
 
 	if res.MatchedCount == 0 && res.ModifiedCount == 0 {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.USER_NOT_FOUND,
+			Status:  http.StatusNotFound,
+			Error:   apierror.UserNotFound,
 			Message: "Users not found",
 		}
 	}
@@ -260,8 +243,8 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Erro
 
 	if utils.IsEmpty(mail.Email) || utils.IsEmpty(mail.NewEmail) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_USER_EMAIL,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyUserEmail,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -269,20 +252,16 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Erro
 	// Equal emails
 	if mail.Email == mail.NewEmail {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.USER_EDITING_EMAILS_EQUAL,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.UpdateParametersEqual,
 			Message: "The new email is the same as the old one",
 		}
 	}
 
 	// validate email
-	var checkedPass = utils.ValidateEmail(mail.Email)
-	if checkedPass.Response != 200 {
-		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   checkedPass.Response,
-			Message: checkedPass.Message,
-		}
+	checkedEmailError := utils.ValidateEmail(mail.Email)
+	if checkedEmailError != nil {
+		return checkedEmailError
 	}
 
 	// Check if user exists
@@ -291,20 +270,16 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Erro
 
 	if found != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_CONFLICT,
-			Error:   valerror.USER_ALREADY_EXISTS,
+			Status:  http.StatusConflict,
+			Error:   apierror.UserAlreadyExists,
 			Message: "That email is already in use",
 		}
 	}
 
 	// update user on database
-	var checkedEmail = utils.ValidateEmail(mail.NewEmail)
-	if checkedEmail.Response != 200 {
-		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   int(checkedEmail.Response),
-			Message: checkedEmail.Message,
-		}
+	checkedEmailError = utils.ValidateEmail(mail.NewEmail)
+	if checkedEmailError != nil {
+		return checkedEmailError
 
 	}
 
@@ -318,45 +293,44 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Erro
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_UPDATED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "User not updated" + err.Error(),
 		}
 	}
 
 	if updateStatus.MatchedCount == 0 {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.USER_NOT_FOUND,
+			Status:  http.StatusNotFound,
+			Error:   apierror.UserNotFound,
 			Message: "User not found",
 		}
 	}
 
 	if updateStatus.ModifiedCount == 0 {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_UPDATED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "User not updated",
 		}
 	}
 
 	// update user devices on database
 	devices := conn.Database(database.CurrentDatabase).Collection(database.DEVICE)
-
 	updateStatus, err = devices.UpdateMany(database.GetDefaultContext(), bson.M{"user": mail.Email}, bson.M{"$set": bson.M{"user": mail.NewEmail}})
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_UPDATED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "User devices not updated",
 		}
 	}
 
 	if updateStatus.MatchedCount != 0 && updateStatus.ModifiedCount == 0 {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_UPDATED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "User devices not updated",
 		}
 	}
@@ -370,8 +344,8 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 
 	if utils.IsEmpty(user.Email) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_USER_EMAIL,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyUsername,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -383,8 +357,8 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 
 		if err != nil {
 			return &apimodels.Error{
-				Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-				Error:   valerror.USER_NOT_UPDATED,
+				Status:  http.StatusInternalServerError,
+				Error:   apierror.DatabaseError,
 				Message: "User not updated, image not saved :" + err.Error(),
 			}
 		}
@@ -396,8 +370,8 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_UPDATED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "User not updated, image not saved :" + err.Error(),
 		}
 	}
@@ -407,8 +381,8 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 
 	if editErr != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_UPDATED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "User not updated",
 		}
 	}
@@ -422,8 +396,8 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if utils.IsEmpty(user.Email) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.EMPTY_USER_EMAIL,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyUserEmail,
 			Message: "Email cannot be empty",
 		}
 	}
@@ -434,8 +408,8 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_DELETED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UserNotDeleted,
 			Message: "User not deleted",
 		}
 	}
@@ -446,8 +420,8 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_DELETED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UserNotDeleted,
 			Message: "User not deleted",
 		}
 	}
@@ -460,16 +434,16 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_DELETED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UserNotDeleted,
 			Message: "User not deleted",
 		}
 	}
 
 	if deleteResult.DeletedCount == 0 {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.USER_NOT_FOUND,
+			Status:  http.StatusNotFound,
+			Error:   apierror.UserNotFound,
 			Message: "User not found",
 		}
 	}
@@ -483,8 +457,8 @@ func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmod
 
 	if err != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.INVALID_OBJECT_ID,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidObjectId,
 			Message: "Invalid user id",
 		}
 	}
@@ -499,8 +473,8 @@ func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmod
 	// if an error occurs,
 	if err != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.UNEXPECTED_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UnexpectedError,
 			Message: err.Error(),
 		}
 	}
@@ -508,8 +482,8 @@ func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmod
 	// if user not found, return error
 	if found.ID == "" {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.USER_NOT_FOUND,
+			Status:  http.StatusNotFound,
+			Error:   apierror.UserNotFound,
 			Message: "User not found",
 		}
 	}
@@ -535,8 +509,8 @@ func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels
 	// if an error occurs,
 	if err != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.UNEXPECTED_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.UnexpectedError,
 			Message: err.Error(),
 		}
 	}
@@ -544,8 +518,8 @@ func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels
 	// if user not found, return error
 	if found.ID == "" {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.USER_NOT_FOUND,
+			Status:  http.StatusNotFound,
+			Error:   apierror.UserNotFound,
 			Message: "User not found",
 		}
 	}
@@ -565,8 +539,8 @@ func ValidateUser(conn *mongo.Client, code string) *apimodels.Error {
 
 	if utils.IsEmpty(code) {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.INVALID_VALIDATION_CODE,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidValidationCode,
 			Message: "Code cannot be empty",
 		}
 	}
@@ -582,24 +556,24 @@ func ValidateUser(conn *mongo.Client, code string) *apimodels.Error {
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.INVALID_VALIDATION_CODE,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidValidationCode,
 			Message: "Invalid validation code",
 		}
 	}
 
 	if user.Validated {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_OK,
-			Error:   valerror.USER_ALREADY_VALIDATED,
+			Status:  http.StatusOK,
+			Error:   apierror.UserAlreadyValidated,
 			Message: "User already validated",
 		}
 	}
 
 	if user.ValidationCode != code {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.INVALID_VALIDATION_CODE,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidValidationCode,
 			Message: "Invalid validation code",
 		}
 	}
@@ -612,16 +586,16 @@ func ValidateUser(conn *mongo.Client, code string) *apimodels.Error {
 
 	if result.MatchedCount == 0 {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_NOT_FOUND,
-			Error:   valerror.USER_NOT_FOUND,
+			Status:  http.StatusNotFound,
+			Error:   apierror.UserNotFound,
 			Message: "User not found",
 		}
 	}
 
 	if editerr != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.USER_NOT_UPDATED,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "User not validated: " + editerr.Error(),
 		}
 	}
@@ -671,8 +645,8 @@ func getUserFromToken(conn *mongo.Client, token string) (usersmodels.User, *apim
 
 	if err != nil {
 		return usersmodels.User{}, &apimodels.Error{
-			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   valerror.INVALID_TOKEN,
+			Status:  http.StatusForbidden,
+			Error:   apierror.InvalidToken,
 			Message: "User not matching token",
 		}
 	}
@@ -684,8 +658,8 @@ func getUserFromToken(conn *mongo.Client, token string) (usersmodels.User, *apim
 
 	if err != nil {
 		return usersmodels.User{}, &apimodels.Error{
-			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   valerror.INVALID_TOKEN,
+			Status:  http.StatusForbidden,
+			Error:   apierror.InvalidToken,
 			Message: "User not matching token",
 		}
 	}
@@ -700,8 +674,8 @@ func IsTokenValid(conn *mongo.Client, token string) (*usersmodels.User, *apimode
 
 	if err != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   valerror.INVALID_TOKEN,
+			Status:  http.StatusForbidden,
+			Error:   apierror.InvalidToken,
 			Message: "invalid token format",
 		}
 	}
@@ -717,16 +691,16 @@ func IsTokenValid(conn *mongo.Client, token string) (*usersmodels.User, *apimode
 
 	if tokenUserErr != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   valerror.INVALID_TOKEN,
+			Status:  http.StatusForbidden,
+			Error:   apierror.InvalidToken,
 			Message: "invalid token",
 		}
 	}
 
 	if foundUser.Email != email {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_FORBIDDEN,
-			Error:   valerror.INVALID_TOKEN,
+			Status:  http.StatusForbidden,
+			Error:   apierror.InvalidToken,
 			Message: "invalid token",
 		}
 	}

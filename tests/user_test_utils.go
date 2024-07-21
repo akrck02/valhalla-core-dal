@@ -5,6 +5,7 @@ import (
 
 	"github.com/akrck02/valhalla-core-dal/mock"
 	userdal "github.com/akrck02/valhalla-core-dal/services/user"
+	apierror "github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -38,7 +39,7 @@ func RegisterTestUser(conn *mongo.Client, t *testing.T, user *usersmodels.User) 
 	return user
 }
 
-func RegisterTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.User, status int, errorcode int) {
+func RegisterTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.User, status int, errorcode apierror.ApiError) {
 
 	log.FormattedInfo("Registering user: ${0}", user.Email)
 	log.FormattedInfo("Password: ${0}", user.Password)
@@ -52,7 +53,7 @@ func RegisterTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmode
 	}
 
 	if err.Status != status || err.Error != errorcode {
-		t.Error("The error is not the expected" + err.Message)
+		t.Error("The error is not the expected [", status, " / ", errorcode, "], current: [", err.Status, " / ", err.Error, "]", err.Message)
 		return
 	}
 
@@ -91,7 +92,7 @@ func LoginTestUser(conn *mongo.Client, t *testing.T, user *usersmodels.User, ip 
 
 }
 
-func LoginTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.User, ip string, userAgent string, status int, errorcode int) {
+func LoginTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.User, ip string, userAgent string, status int, errorcode apierror.ApiError) {
 
 	log.FormattedInfo("Logging in user: ${0}", user.Email)
 	log.FormattedInfo("Password: ${0}", user.Password)
@@ -104,7 +105,7 @@ func LoginTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.
 	}
 
 	if err.Status != status || err.Error != errorcode {
-		t.Error("The error is not the expected" + err.Message)
+		t.Error("The error is not the expected [", status, " / ", errorcode, "], current: [", err.Status, " / ", err.Error, "]", err.Message)
 		return
 	}
 
@@ -148,7 +149,7 @@ func DeleteTestUser(conn *mongo.Client, t *testing.T, user *usersmodels.User) {
 
 }
 
-func DeleteTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.User, status int, errorcode int) {
+func DeleteTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.User, status int, errorcode apierror.ApiError) {
 
 	log.FormattedInfo("Deleting user: ${0}", user.Email)
 
@@ -160,7 +161,7 @@ func DeleteTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels
 	}
 
 	if err.Status != status || err.Error != errorcode {
-		t.Error("The error is not the expected" + err.Message)
+		t.Error("The error is not the expected [", status, " / ", errorcode, "], current: [", err.Status, " / ", err.Error, "]", err.Message)
 		return
 	}
 
@@ -185,7 +186,7 @@ func EditTestUserEmail(conn *mongo.Client, t *testing.T, emailChangeRequest *use
 
 }
 
-func EditTestUserEmailWithError(conn *mongo.Client, t *testing.T, emailChangeRequest *userdal.EmailChangeRequest, status int, errorcode int) {
+func EditTestUserEmailWithError(conn *mongo.Client, t *testing.T, emailChangeRequest *userdal.EmailChangeRequest, status int, errorcode apierror.ApiError) {
 
 	log.FormattedInfo("Editing user mail: ${0}", emailChangeRequest.Email)
 	log.FormattedInfo("New email: ${0}", emailChangeRequest.NewEmail)
@@ -198,7 +199,7 @@ func EditTestUserEmailWithError(conn *mongo.Client, t *testing.T, emailChangeReq
 	}
 
 	if err.Status != status || err.Error != errorcode {
-		t.Error("The error is not the expected" + err.Message)
+		t.Error("The error is not the expected [", status, " / ", errorcode, "], current: [", err.Status, " / ", err.Error, "]", err.Message)
 		return
 	}
 
@@ -221,7 +222,7 @@ func EditTestUser(conn *mongo.Client, t *testing.T, user *usersmodels.User) {
 
 }
 
-func EditTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.User, status int, errorcode int) {
+func EditTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.User, status int, errorcode apierror.ApiError) {
 
 	log.FormattedInfo("Editing user: ${0}", user.Email)
 	err := userdal.EditUser(conn, user)
@@ -232,7 +233,7 @@ func EditTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.U
 	}
 
 	if err.Status != status || err.Error != errorcode {
-		t.Error("The error is not the expected" + err.Message)
+		t.Error("The error is not the expected [", status, " / ", errorcode, "], current: [", err.Status, " / ", err.Error, "]", err.Message)
 		return
 	}
 
@@ -241,7 +242,7 @@ func EditTestUserWithError(conn *mongo.Client, t *testing.T, user *usersmodels.U
 
 }
 
-func ValidateTestTokenWithError(conn *mongo.Client, t *testing.T, token string, status int, errorcode int) {
+func ValidateTestTokenWithError(conn *mongo.Client, t *testing.T, token string, status int, errorcode apierror.ApiError) {
 
 	log.FormattedInfo("Validating token: ${0}", token)
 
@@ -253,7 +254,7 @@ func ValidateTestTokenWithError(conn *mongo.Client, t *testing.T, token string, 
 	}
 
 	if err.Status != status || err.Error != errorcode {
-		t.Error("The error is not the expected" + err.Message)
+		t.Error("The error is not the expected [", status, " / ", errorcode, "], current: [", err.Status, " / ", err.Error, "]", err.Message)
 		return
 	}
 
