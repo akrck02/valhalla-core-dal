@@ -16,7 +16,7 @@ jobs:
         go-version: [ '1.21', '1.22.x' ]
 
     steps:
-
+    - uses: actions/checkout@v3
     - name: Set database running
       uses: supercharge/mongodb-github-action@1.9.0
       with:
