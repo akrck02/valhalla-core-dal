@@ -1,15 +1,17 @@
 package devicedal
 
 import (
+	"net/http"
+
 	"github.com/akrck02/valhalla-core-dal/configuration"
 	"github.com/akrck02/valhalla-core-dal/database"
-	"github.com/akrck02/valhalla-core-sdk/http"
+
+	apierror "github.com/akrck02/valhalla-core-sdk/error"
 	"github.com/akrck02/valhalla-core-sdk/log"
 	apimodels "github.com/akrck02/valhalla-core-sdk/models/api"
 	devicemodels "github.com/akrck02/valhalla-core-sdk/models/device"
 	usersmodels "github.com/akrck02/valhalla-core-sdk/models/users"
 	"github.com/akrck02/valhalla-core-sdk/utils"
-	"github.com/akrck02/valhalla-core-sdk/valerror"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,8 +22,8 @@ func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemod
 	token, err := utils.GenerateAuthToken(user, device, configuration.Params.Secret)
 	if err != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.DATABASE_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "Error generating token",
 		}
 	}
@@ -46,8 +48,8 @@ func AddUserDevice(conn *mongo.Client, user *usersmodels.User, device *devicemod
 	_, insertErr := coll.InsertOne(database.GetDefaultContext(), device)
 	if insertErr != nil {
 		return device, &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.DATABASE_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "Error creating device",
 		}
 	}
@@ -65,8 +67,8 @@ func FindDevice(coll *mongo.Collection, device *devicemodels.Device) (*devicemod
 
 	if err != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.DEVICE_DOES_NOT_EXIST,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.DeviceNotFound,
 			Message: "Device doesn't exists",
 		}
 	}
@@ -84,9 +86,9 @@ func FindDeviceByAuthToken(coll *mongo.Collection, device *devicemodels.Device) 
 
 	if err != nil {
 		return nil, &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.DEVICE_DOES_NOT_EXIST,
-			Message: "Device doesn't exists",
+			Status:  http.StatusBadRequest,
+			Error:   apierror.DeviceNotFound,
+			Message: "No possible login devices",
 		}
 	}
 
@@ -108,8 +110,8 @@ func DeleteDevice(conn *mongo.Client, device *devicemodels.Device) *apimodels.Er
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
-			Error:   valerror.DATABASE_ERROR,
+			Status:  http.StatusInternalServerError,
+			Error:   apierror.DatabaseError,
 			Message: "Error deleting device",
 		}
 	}
@@ -125,16 +127,16 @@ func DeviceExists(conn *mongo.Client, device *devicemodels.Device) *apimodels.Er
 
 	if err != nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.DEVICE_DOES_NOT_EXIST,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.DeviceNotFound,
 			Message: "Device doesn't exist",
 		}
 	}
 
 	if obtained == nil {
 		return &apimodels.Error{
-			Status:  http.HTTP_STATUS_BAD_REQUEST,
-			Error:   valerror.DEVICE_DOES_NOT_EXIST,
+			Status:  http.StatusBadRequest,
+			Error:   apierror.DeviceNotFound,
 			Message: "Device doesn't exist",
 		}
 	}
