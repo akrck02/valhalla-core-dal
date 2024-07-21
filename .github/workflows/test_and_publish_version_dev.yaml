@@ -26,7 +26,7 @@ jobs:
         mongodb-port: 27017
 
     - name: List current dir
-    - run: ls -lha
+      run: ls -lha
     
     - name: Create env file
       run: cp test.env .env
