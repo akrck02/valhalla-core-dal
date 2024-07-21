@@ -24,9 +24,6 @@ jobs:
         mongodb-password: p4ssw0rd
         mongodb-db: valhalla-test
         mongodb-port: 27017
-
-    - name: List current dir
-      run: ls -lha
     
     - name: Create env file
       run: cp test.env .env
@@ -35,6 +32,7 @@ jobs:
       run: go test -v ./...
 
   build:
+    environment: Development
     runs-on: ubuntu-latest
     needs: test
     steps:
