@@ -277,7 +277,9 @@ func TestEditUserEmail(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	user = RegisterTestUser(conn, t, user)
+	newUser := RegisterTestUser(conn, t, user)
+	newUser.Password = user.Password
+
 	LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
 
 	// Change the user email
@@ -288,9 +290,9 @@ func TestEditUserEmail(t *testing.T) {
 	}
 
 	EditTestUserEmail(conn, t, &emailChangeRequest)
-	user.Email = newEmail
+	newUser.Email = newEmail
 
-	newUser, err := userdal.GetUser(conn, user, true)
+	newUser, err := userdal.GetUser(conn, newUser, true)
 
 	if err != nil {
 		t.Error("The user was not found", err)
@@ -458,7 +460,7 @@ func TestEditUserPassword(t *testing.T) {
 
 }
 
-func TestEditUserPasswordUserNotFound(t *testing.T) {
+func TestEditUserPassworInvalidObjectId(t *testing.T) {
 
 	conn := database.Connect()
 	defer conn.Disconnect(context.Background())
@@ -469,7 +471,11 @@ func TestEditUserPasswordUserNotFound(t *testing.T) {
 		Username: mock.Username(),
 	}
 
-	EditTestUserWithError(conn, t, user, http.StatusNotFound, apierror.UserNotFound)
+	newUser := RegisterTestUser(conn, t, user)
+	newUser.Password = user.Password
+	newUser.ID = mock.InvalidId()
+
+	EditTestUserWithError(conn, t, newUser, http.StatusBadRequest, apierror.InvalidObjectId)
 }
 
 func TestEditUserPasswordShort(t *testing.T) {

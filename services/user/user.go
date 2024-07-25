@@ -174,9 +174,37 @@ func LoginAuth(conn *mongo.Client, auth *usersmodels.AuthLogin, ip string, userA
 
 func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
-	// Connect database
-
 	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
+
+	if utils.IsEmpty(user.ID) {
+		return &apimodels.Error{
+			Status:  http.StatusBadRequest,
+			Error:   apierror.EmptyUsername,
+			Message: "User id cannot be empty",
+		}
+	}
+
+	// Get if id is valid
+	_, parseIdError := utils.StringToObjectId(user.ID)
+
+	if parseIdError != nil {
+		return &apimodels.Error{
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidObjectId,
+			Message: "Invalid user id",
+		}
+	}
+
+	// Check if the user exists
+	found := userExists(user.ID, users)
+
+	if found == nil {
+		return &apimodels.Error{
+			Status:  http.StatusNotFound,
+			Error:   apierror.UserNotFound,
+			Message: "User not found",
+		}
+	}
 
 	// validate email
 	if user.Email != "" {
@@ -216,7 +244,17 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 	toUpdate := bson.M{"$set": setObject}
 
 	// update user on database
-	res, err := users.UpdateOne(database.GetDefaultContext(), bson.M{"email": user.Email}, toUpdate)
+	objID, parseObjectIdError := primitive.ObjectIDFromHex(user.ID)
+
+	if parseObjectIdError != nil {
+		return &apimodels.Error{
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidObjectId,
+			Message: "Invalid user id",
+		}
+	}
+
+	res, err := users.UpdateByID(database.GetDefaultContext(), objID, toUpdate)
 
 	if err != nil {
 		return &apimodels.Error{
@@ -240,7 +278,6 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Error {
 
 	// Connect database
-
 	if utils.IsEmpty(mail.Email) || utils.IsEmpty(mail.NewEmail) {
 		return &apimodels.Error{
 			Status:  http.StatusBadRequest,
@@ -340,18 +377,27 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Erro
 
 func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture []byte) *apimodels.Error {
 
-	// Connect database
-
-	if utils.IsEmpty(user.Email) {
+	if utils.IsEmpty(user.ID) {
 		return &apimodels.Error{
 			Status:  http.StatusBadRequest,
 			Error:   apierror.EmptyUsername,
-			Message: "Email cannot be empty",
+			Message: "User id cannot be empty",
+		}
+	}
+
+	// Get if id is valid
+	_, parseIdError := utils.StringToObjectId(user.ID)
+
+	if parseIdError != nil {
+		return &apimodels.Error{
+			Status:  http.StatusBadRequest,
+			Error:   apierror.InvalidObjectId,
+			Message: "Invalid user id",
 		}
 	}
 
 	//if the path base profile pic does not exist, create it
-	var profilePathDir = utils.GetProfilePicturePath("", configuration.PROFILE_PICTURES_PATH)
+	var profilePathDir = utils.GetProfilePicturePath(user.ID, configuration.PROFILE_PICTURES_PATH)
 	if !utils.ExistsDir(profilePathDir) {
 		err := utils.CreateDir(profilePathDir)
 
@@ -366,13 +412,13 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 
 	// save the picture
 	var profilePicPath = utils.GetProfilePicturePath(user.Email, configuration.PROFILE_PICTURES_PATH)
-	err := utils.SaveFile(profilePicPath, picture)
+	saveFileError := utils.SaveFile(profilePicPath, picture)
 
-	if err != nil {
+	if parseIdError != nil {
 		return &apimodels.Error{
 			Status:  http.StatusInternalServerError,
 			Error:   apierror.DatabaseError,
-			Message: "User not updated, image not saved :" + err.Error(),
+			Message: "User not updated, image not saved :" + saveFileError.Error(),
 		}
 	}
 
@@ -609,6 +655,26 @@ func mailExists(email string, coll *mongo.Collection) *usersmodels.User {
 
 	var result usersmodels.User
 	err := coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
+
+	if err != nil {
+		return nil
+	}
+
+	return &result
+}
+
+func userExists(userId string, coll *mongo.Collection) *usersmodels.User {
+
+	objectId, err := primitive.ObjectIDFromHex(userId)
+
+	if err != nil {
+		return nil
+	}
+
+	filter := bson.D{{Key: "_id", Value: objectId}}
+
+	var result usersmodels.User
+	err = coll.FindOne(database.GetDefaultContext(), filter).Decode(&result)
 
 	if err != nil {
 		return nil

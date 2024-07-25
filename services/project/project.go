@@ -1,6 +1,7 @@
 package projectdal
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/akrck02/valhalla-core-dal/database"
@@ -116,9 +117,8 @@ func EditProject(conn *mongo.Client, project *projectmodels.Project) *apimodels.
 		}
 	}
 
-	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
-
-	_, updateError := coll.UpdateOne(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{
+	coll := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
+	updateResult, updateError := coll.UpdateByID(database.GetDefaultContext(), objID, bson.M{
 		"$set": bson.M{
 			"name":        project.Name,
 			"description": project.Description,
@@ -132,6 +132,18 @@ func EditProject(conn *mongo.Client, project *projectmodels.Project) *apimodels.
 			Status:  http.StatusBadRequest,
 			Error:   apierror.DatabaseError,
 			Message: "Could not update team: " + updateError.Error(),
+		}
+	}
+
+	o := objID.Hex()
+	log.Default().Print(o)
+
+	// Check if team was found
+	if updateResult.MatchedCount == 0 && updateResult.ModifiedCount == 0 {
+		return &apimodels.Error{
+			Status:  http.StatusNotFound,
+			Error:   apierror.TeamNotFound,
+			Message: "Team not found",
 		}
 	}
 

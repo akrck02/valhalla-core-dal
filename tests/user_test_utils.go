@@ -19,8 +19,15 @@ func RegisterMockTestUser(conn *mongo.Client, t *testing.T) *usersmodels.User {
 		Username: mock.Username(),
 	}
 
-	return RegisterTestUser(conn, t, user)
+	var newUser = RegisterTestUser(conn, t, user)
 
+	if newUser == nil {
+		t.Error("The user was not registered")
+		return nil
+	}
+
+	newUser.Password = user.Password
+	return newUser
 }
 
 func RegisterTestUser(conn *mongo.Client, t *testing.T, user *usersmodels.User) *usersmodels.User {
@@ -33,6 +40,13 @@ func RegisterTestUser(conn *mongo.Client, t *testing.T, user *usersmodels.User) 
 
 	if err != nil {
 		t.Error("The user was not registered", err)
+		return nil
+	}
+
+	user, err = userdal.GetUser(conn, user, false)
+
+	if err != nil {
+		t.Error("The user was not found", err)
 		return nil
 	}
 
