@@ -11,12 +11,12 @@ jobs:
   test:
     environment: Development
     runs-on: self-hosted
-    uses: actions/setup-go@v5
     strategy:
       matrix:
         go-version: [ '1.21', '1.22.x' ]
 
     steps:
+    - uses: actions/setup-go@v5
     - uses: actions/checkout@v3
     - uses: satackey/action-docker-layer-caching@v0.0.11
       continue-on-error: true
