@@ -135,4 +135,36 @@ func TestEditProject(t *testing.T) {
 		return
 	}
 
+	project.Name = "New Name"
+	project.Description = "New Description"
+
+	err := projectdal.EditProject(conn, project)
+
+	if err != nil {
+		t.Errorf("Error editing project: %v", err)
+		return
+	}
+
+}
+
+func TestDeleteProject(t *testing.T) {
+
+	conn := database.Connect()
+	defer conn.Disconnect(context.Background())
+
+	user := RegisterMockTestUser(conn, t)
+	project := CreateMockTestProjectWithUser(conn, t, user)
+
+	if project == nil {
+		t.Errorf("Error creating project")
+		return
+	}
+
+	err := projectdal.DeleteProject(conn, project)
+
+	if err != nil {
+		t.Errorf("Error deleting project: %v", err)
+		return
+	}
+
 }

@@ -26,7 +26,7 @@ func CreateMockTestProjectWithUser(conn *mongo.Client, t *testing.T, user *users
 func CreateTestProjectWithUser(conn *mongo.Client, t *testing.T, project *projectmodels.Project, user *usersmodels.User) *projectmodels.Project {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
-	err := projectdal.CreateProject(conn, project)
+	project, err := projectdal.CreateProject(conn, project)
 
 	if err != nil {
 		t.Errorf("Error creating project: %v", err)
@@ -40,7 +40,7 @@ func CreateTestProjectWithUser(conn *mongo.Client, t *testing.T, project *projec
 func CreateTestProjectWithError(conn *mongo.Client, t *testing.T, project *projectmodels.Project, status int, errorcode apierror.ApiError) {
 
 	log.FormattedInfo("Creating project: ${0}", project.Name)
-	err := projectdal.CreateProject(conn, project)
+	project, err := projectdal.CreateProject(conn, project)
 
 	if err == nil {
 		t.Error("Project created successfully")
