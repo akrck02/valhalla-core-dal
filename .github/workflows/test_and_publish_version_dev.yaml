@@ -10,7 +10,7 @@ on:
 jobs:
   test:
     environment: Development
-    runs-on: fuyu
+    runs-on: self-hosted
     strategy:
       matrix:
         go-version: [ '1.21', '1.22.x' ]
