@@ -185,10 +185,6 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 
 func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmodels.Project, *apimodels.Error) {
 
-	// Connect database
-	var client = database.Connect()
-	defer database.Disconnect(*client)
-
 	// Check if the project ID is valid
 	projectIdObject, parsingError := utils.StringToObjectId(project.ID)
 	if parsingError != nil {
@@ -200,7 +196,7 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 	}
 
 	// Get project by id
-	projects := client.Database(database.CurrentDatabase).Collection(database.PROJECT)
+	projects := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
 	found := projectmodels.Project{}
 	err := projects.FindOne(database.GetDefaultContext(), bson.M{"_id": projectIdObject}).Decode(&found)
 
