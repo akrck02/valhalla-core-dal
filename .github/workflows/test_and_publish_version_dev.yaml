@@ -6,6 +6,11 @@ on:
   push:
     branches-ignore:
       - main
+env:
+  MONGO_USER: ${{ vars.MONGO_USER }}
+  MONGO_PASSWORD: ${{ vars.MONGO_PASSWORD }}
+  MONGO_DB: ${{ vars.MONGO_DB }}
+  MONGO_PORT: ${{ vars.MONGO_PORT }} 
   
 jobs:
   test:
@@ -13,27 +18,27 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22.x' ]
+        go-version: [ '1.22.x' ]
 
     steps:
     - uses: actions/setup-go@v5
       with:
           # Semantic version range syntax or exact version of Go
-          go-version:  1.22.0
+          go-version:  ${{ matrix.go-version }}
     - uses: actions/checkout@v3
     - uses: satackey/action-docker-layer-caching@v0.0.11
       continue-on-error: true
 
+    - name: Create env file
+      run: echo "MONGO_USER=${{ env.MONGO_USER }}" >> .env && echo "MONGO_PASSWORD=${{ env.MONGO_PASSWORD }}" >> .env && echo "MONGO_DB=${{ env.MONGO_DB }}" >> .env && echo "MONGO_PORT=${{ env.MONGO_PORT }}" >> .env
+
     - name: Set database running
       uses: supercharge/mongodb-github-action@1.9.0
       with:
-        mongodb-username: admin
-        mongodb-password: p4ssw0rd
-        mongodb-db: valhalla-test
-        mongodb-port: 27017
-    
-    - name: Create env file
-      run: cp test.env .env
+        mongodb-username: ${{ env.MONGO_USER }}
+        mongodb-password: ${{ env.MONGO_PASSWORD }}
+        mongodb-db: ${{ env.MONGO_DB }}
+        mongodb-port: ${{ env.MONGO_PORT }}
 
     - name: Run tests 
       run: go test -v ./...
@@ -41,6 +46,10 @@ jobs:
   build:
     environment: Development
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ '1.22.x' ]
+
     needs: test
     steps:
     - uses: actions/checkout@v3
@@ -64,7 +73,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.22.0
+        go-version:  ${{ matrix.go-version }}
 
     # Create tag with version, date and branch
     - name: Create tag
