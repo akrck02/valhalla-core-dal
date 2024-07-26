@@ -98,7 +98,7 @@ func CreateTeam(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 		}
 	}
 
-	team.ID = res.InsertedID.(primitive.ObjectID).Hex()
+	team.Id = res.InsertedID.(primitive.ObjectID).Hex()
 	return nil
 }
 
@@ -106,7 +106,7 @@ func DeleteTeam(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
-	objID, err := utils.StringToObjectId(team.ID)
+	objID, err := utils.StringToObjectId(team.Id)
 
 	if err != nil {
 		return &apimodels.Error{
@@ -136,7 +136,7 @@ func EditTeam(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
-	objID, err := utils.StringToObjectId(team.ID)
+	objID, err := utils.StringToObjectId(team.Id)
 
 	if err != nil {
 		return &apimodels.Error{
@@ -151,12 +151,7 @@ func EditTeam(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 	lastUpdate := utils.GetCurrentMillis()
 	team.LastUpdate = &lastUpdate
 	_, err = coll.UpdateOne(database.GetDefaultContext(), bson.M{"_id": objID}, bson.M{
-		"$set": bson.M{
-			"name":        team.Name,
-			"description": team.Description,
-			"profilepic":  team.ProfilePic,
-			"updatedate":  team.LastUpdate,
-		},
+		"$set": team.Bson(true),
 	})
 
 	// Check if team was updated
@@ -184,7 +179,7 @@ func EditTeamOwner(conn *mongo.Client, team *teammodels.Team) *apimodels.Error {
 
 	// Transform team id to object id
 	// also check if team id is valid
-	objID, err1 := utils.StringToObjectId(team.ID)
+	objID, err1 := utils.StringToObjectId(team.Id)
 
 	if err1 != nil {
 		return &apimodels.Error{
@@ -383,7 +378,7 @@ func GetTeams(conn *mongo.Client, user *usersmodels.User) ([]*teammodels.Team, *
 
 	// Get the teams that the user owns
 	coll := conn.Database(database.CurrentDatabase).Collection(database.TEAM)
-	teamsCursor, err := coll.Find(database.GetDefaultContext(), bson.M{"owner": user.ID})
+	teamsCursor, err := coll.Find(database.GetDefaultContext(), bson.M{"owner": user.Id})
 
 	if err != nil {
 		return nil, &apimodels.Error{
@@ -415,7 +410,7 @@ func GetTeams(conn *mongo.Client, user *usersmodels.User) ([]*teammodels.Team, *
 
 func GetTeam(conn *mongo.Client, team *teammodels.Team) (*teammodels.Team, *apimodels.Error) {
 
-	objID, err1 := utils.StringToObjectId(team.ID)
+	objID, err1 := utils.StringToObjectId(team.Id)
 
 	if err1 != nil {
 		return nil, &apimodels.Error{
@@ -507,13 +502,13 @@ func isUserMemberOrOwner(conn *mongo.Client, request *MemberChangeRequest) bool 
 
 	err := coll.FindOne(database.GetDefaultContext(), filterMember).Decode(&result)
 
-	if err == nil && result.ID != "" {
+	if err == nil && result.Id != "" {
 		return true
 	}
 
 	err = coll.FindOne(database.GetDefaultContext(), filterOwner).Decode(&result)
 
-	if err == nil && result.ID != "" {
+	if err == nil && result.Id != "" {
 		return true
 	}
 

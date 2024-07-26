@@ -8,22 +8,22 @@ import (
 // Users
 
 func CanEditUser(author *usersmodels.User, user *usersmodels.User) bool {
-	return author.ID == user.ID
+	return author.Id == user.Id
 }
 
 func CanSeeUser(author *usersmodels.User, user *usersmodels.User) bool {
-	return author.ID == user.ID
+	return author.Id == user.Id
 }
 func CanDeleteProject(logedUser *usersmodels.User, project *projectmodels.Project) bool {
-	return logedUser.ID == project.Owner
+	return logedUser.Id == project.Owner
 }
 
 //Projects
 
 func CanEditProject(user *usersmodels.User, project *projectmodels.Project) bool {
-	return user.ID == project.Owner
+	return user.Id == project.Owner
 }
 
 func CanSeeProject(user *usersmodels.User, project *projectmodels.Project) bool {
-	return user.ID == project.Owner
+	return user.Id == project.Owner
 }

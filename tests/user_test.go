@@ -440,10 +440,12 @@ func TestEditUserPassword(t *testing.T) {
 	user := RegisterMockTestUser(conn, t)
 
 	// change the user password
-	user.Password = mock.Password() + "xXx"
+	userpass := mock.Password() + "xXx"
+	user.Password = userpass
 	EditTestUser(conn, t, user)
 
 	// check if the user can login with the new password
+	user.Password = userpass
 	LoginTestUser(conn, t, user, mock.Ip(), mock.Platform())
 
 	newUser, err := userdal.GetUser(conn, user, true)
@@ -473,7 +475,7 @@ func TestEditUserPassworInvalidObjectId(t *testing.T) {
 
 	newUser := RegisterTestUser(conn, t, user)
 	newUser.Password = user.Password
-	newUser.ID = mock.InvalidId()
+	newUser.Id = mock.InvalidId()
 
 	EditTestUserWithError(conn, t, newUser, http.StatusBadRequest, apierror.InvalidObjectId)
 }
@@ -635,7 +637,7 @@ func TestGetUserNotFound(t *testing.T) {
 	defer conn.Disconnect(context.Background())
 
 	user := RegisterMockTestUser(conn, t)
-	user.ID = mock.InvalidId()
+	user.Id = mock.InvalidId()
 	_, err := userdal.GetUser(conn, user, true)
 
 	if err == nil {

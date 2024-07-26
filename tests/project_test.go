@@ -92,15 +92,15 @@ func TestGetUserProjects(t *testing.T) {
 	project := CreateMockTestProjectWithUser(conn, t, user)
 	project2 := CreateMockTestProjectWithUser(conn, t, user)
 
-	projects := projectdal.GetUserProjects(conn, user.ID)
+	projects := projectdal.GetUserProjects(conn, user.Id)
 
 	if len(projects) == 0 {
-		t.Errorf("No projects found for user: %v", user.ID)
+		t.Errorf("No projects found for user: %v", user.Id)
 		return
 	}
 
 	if len(projects) != 2 {
-		t.Errorf("Incorrect number of projects found for user: %v", user.ID)
+		t.Errorf("Incorrect number of projects found for user: %v", user.Id)
 		return
 	}
 

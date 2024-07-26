@@ -48,13 +48,13 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) (*project
 	}
 
 	// Check if the user exists and is valid
-	owner, userGetError := userdal.GetUser(conn, &usersmodels.User{ID: project.Owner}, true)
+	owner, userGetError := userdal.GetUser(conn, &usersmodels.User{Id: project.Owner}, true)
 	if userGetError != nil {
 		return nil, userGetError
 	}
 
-	// convert the owner ID to an object ID
-	_, parsingError := utils.StringToObjectId(owner.ID)
+	// convert the owner ID to an object Id
+	_, parsingError := utils.StringToObjectId(owner.Id)
 	if parsingError != nil {
 		return nil, &apimodels.Error{
 			Status:  http.StatusBadRequest,
@@ -66,7 +66,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) (*project
 	// Check if the project already exists
 	// it is not possible to have two projects with the same name and owner
 	coll := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
-	found := projectNameExists(coll, project.Name, owner.ID)
+	found := projectNameExistsForOwner(coll, project.Name, owner.Id)
 
 	if found {
 		return nil, &apimodels.Error{
@@ -99,7 +99,7 @@ func CreateProject(conn *mongo.Client, project *projectmodels.Project) (*project
 	}
 
 	// Get the project id and return the created project
-	project.ID = insertResult.InsertedID.(primitive.ObjectID).Hex()
+	project.Id = insertResult.InsertedID.(primitive.ObjectID).Hex()
 	return project, nil
 }
 
@@ -107,24 +107,18 @@ func EditProject(conn *mongo.Client, project *projectmodels.Project) *apimodels.
 
 	// Transform team id to object id
 	// also check if team id is valid
-	objID, parsingError := utils.StringToObjectId(project.ID)
+	objID, parsingError := utils.StringToObjectId(project.Id)
 
 	if parsingError != nil {
 		return &apimodels.Error{
 			Status:  http.StatusBadRequest,
 			Error:   apierror.InvalidObjectId,
-			Message: "Invalid object id [" + project.ID + "] : " + parsingError.Error(),
+			Message: "Invalid object id [" + project.Id + "] : " + parsingError.Error(),
 		}
 	}
 
 	coll := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
-	updateResult, updateError := coll.UpdateByID(database.GetDefaultContext(), objID, bson.M{
-		"$set": bson.M{
-			"name":        project.Name,
-			"description": project.Description,
-			"updatedate":  project.LastUpdate,
-		},
-	})
+	updateResult, updateError := coll.UpdateByID(database.GetDefaultContext(), objID, bson.M{"$set": project.Bson(true)})
 
 	// Check if team was updated
 	if updateError != nil {
@@ -161,12 +155,12 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 	}
 
 	// Check if the project ID is valid
-	id, parsingError := utils.StringToObjectId(project.ID)
+	id, parsingError := utils.StringToObjectId(project.Id)
 	if parsingError != nil {
 		return &apimodels.Error{
 			Status:  http.StatusBadRequest,
 			Error:   apierror.InvalidObjectId,
-			Message: "Invalid object id [" + project.ID + "] : " + parsingError.Error(),
+			Message: "Invalid object id [" + project.Id + "] : " + parsingError.Error(),
 		}
 	}
 
@@ -198,18 +192,20 @@ func DeleteProject(conn *mongo.Client, project *projectmodels.Project) *apimodel
 func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmodels.Project, *apimodels.Error) {
 
 	// Check if the project ID is valid
-	projectIdObject, parsingError := utils.StringToObjectId(project.ID)
+	projectIdObject, parsingError := utils.StringToObjectId(project.Id)
 	if parsingError != nil {
 		return nil, &apimodels.Error{
 			Status:  http.StatusBadRequest,
 			Error:   apierror.InvalidObjectId,
-			Message: "Invalid object id [" + project.ID + "] : " + parsingError.Error(),
+			Message: "Invalid object id [" + project.Id + "] : " + parsingError.Error(),
 		}
 	}
 
 	// Get project by id
 	projects := conn.Database(database.CurrentDatabase).Collection(database.PROJECT)
 	found := projectmodels.Project{}
+	found.Default()
+
 	err := projects.FindOne(database.GetDefaultContext(), bson.M{"_id": projectIdObject}).Decode(&found)
 
 	// If an error occurs, return the error
@@ -222,7 +218,7 @@ func GetProject(conn *mongo.Client, project *projectmodels.Project) (*projectmod
 	}
 
 	// If the project is not found, return an error
-	if utils.IsEmpty(found.ID) {
+	if utils.IsEmpty(found.Id) {
 		return nil, &apimodels.Error{
 			Status:  http.StatusNotFound,
 			Error:   apierror.ProjectNotFound,
@@ -249,13 +245,19 @@ func GetUserProjects(conn *mongo.Client, ownerId string) []projectmodels.Project
 		return nil
 	}
 
+	// Get all projects
 	var result []projectmodels.Project
 	cursor.All(database.GetDefaultContext(), &result)
+
+	// set default values for each project
+	for i := 0; i < len(result); i++ {
+		result[i].Default()
+	}
 
 	return result
 }
 
-func projectNameExists(coll *mongo.Collection, name string, owner string) bool {
+func projectNameExistsForOwner(coll *mongo.Collection, name string, owner string) bool {
 	filter := bson.M{"name": name, "owner": owner}
 
 	var result *projectmodels.Project

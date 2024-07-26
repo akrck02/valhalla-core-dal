@@ -15,7 +15,7 @@ func CreateMockTestTeamWithOwner(conn *mongo.Client, t *testing.T, owner *usersm
 	team := &teammodels.Team{
 		Name:        mock.TeamName(),
 		Description: mock.TeamDescription(),
-		Owner:       owner.ID,
+		Owner:       owner.Id,
 	}
 
 	return CreateTestTeam(conn, t, team)
@@ -79,8 +79,8 @@ func AddTestTeamMember(conn *mongo.Client, t *testing.T, team *teammodels.Team, 
 	err := teamdal.AddMember(
 		conn,
 		&teamdal.MemberChangeRequest{
-			Team: team.ID,
-			User: user.ID,
+			Team: team.Id,
+			User: user.Id,
 		},
 	)
 

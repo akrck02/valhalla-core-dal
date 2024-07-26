@@ -103,7 +103,7 @@ func Register(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 	}
 
 	// get user from database
-	user.ID = res.InsertedID.(primitive.ObjectID).Hex()
+	user.Id = res.InsertedID.(primitive.ObjectID).Hex()
 	user.CreationDate = userToInsert.CreationDate
 	user.LastUpdate = userToInsert.LastUpdate
 	user.ValidationCode = userToInsert.ValidationCode
@@ -176,7 +176,7 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 	users := conn.Database(database.CurrentDatabase).Collection(database.USER)
 
-	if utils.IsEmpty(user.ID) {
+	if utils.IsEmpty(user.Id) {
 		return &apimodels.Error{
 			Status:  http.StatusBadRequest,
 			Error:   apierror.EmptyUsername,
@@ -185,7 +185,7 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 	}
 
 	// Get if id is valid
-	_, parseIdError := utils.StringToObjectId(user.ID)
+	_, parseIdError := utils.StringToObjectId(user.Id)
 
 	if parseIdError != nil {
 		return &apimodels.Error{
@@ -196,7 +196,7 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 	}
 
 	// Check if the user exists
-	found := userExists(user.ID, users)
+	found := userExists(user.Id, users)
 
 	if found == nil {
 		return &apimodels.Error{
@@ -223,28 +223,15 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 		if checkedError != nil {
 			return checkedError
 		}
+
+		user.Password = utils.EncryptSha256(user.Password)
 	}
 
-	setObject := bson.M{}
-
-	if user.Username != "" {
-		setObject["username"] = user.Username
-	}
-
-	if user.Password != "" {
-		encryptedPass := user.Password
-		setObject["password"] = utils.EncryptSha256(encryptedPass)
-	}
-
-	if user.ProfilePic != "" {
-		setObject["profilePic"] = user.ProfilePic
-	}
-
-	setObject["updatedate"] = utils.GetCurrentMillis()
-	toUpdate := bson.M{"$set": setObject}
+	lastUpdate := utils.GetCurrentMillis()
+	user.LastUpdate = &lastUpdate
 
 	// update user on database
-	objID, parseObjectIdError := primitive.ObjectIDFromHex(user.ID)
+	objID, parseObjectIdError := primitive.ObjectIDFromHex(user.Id)
 
 	if parseObjectIdError != nil {
 		return &apimodels.Error{
@@ -254,13 +241,13 @@ func EditUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 		}
 	}
 
-	res, err := users.UpdateByID(database.GetDefaultContext(), objID, toUpdate)
+	res, err := users.UpdateByID(database.GetDefaultContext(), objID, bson.M{"$set": user.Bson(true)})
 
 	if err != nil {
 		return &apimodels.Error{
 			Status:  http.StatusBadRequest,
 			Error:   apierror.DatabaseError,
-			Message: "User not updated",
+			Message: "User not updated: " + err.Error(),
 		}
 	}
 
@@ -377,7 +364,7 @@ func EditUserEmail(conn *mongo.Client, mail *EmailChangeRequest) *apimodels.Erro
 
 func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture []byte) *apimodels.Error {
 
-	if utils.IsEmpty(user.ID) {
+	if utils.IsEmpty(user.Id) {
 		return &apimodels.Error{
 			Status:  http.StatusBadRequest,
 			Error:   apierror.EmptyUsername,
@@ -386,7 +373,7 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 	}
 
 	// Get if id is valid
-	_, parseIdError := utils.StringToObjectId(user.ID)
+	_, parseIdError := utils.StringToObjectId(user.Id)
 
 	if parseIdError != nil {
 		return &apimodels.Error{
@@ -397,7 +384,7 @@ func EditUserProfilePicture(conn *mongo.Client, user *usersmodels.User, picture 
 	}
 
 	//if the path base profile pic does not exist, create it
-	var profilePathDir = utils.GetProfilePicturePath(user.ID, configuration.PROFILE_PICTURES_PATH)
+	var profilePathDir = utils.GetProfilePicturePath(user.Id, configuration.PROFILE_PICTURES_PATH)
 	if !utils.ExistsDir(profilePathDir) {
 		err := utils.CreateDir(profilePathDir)
 
@@ -499,7 +486,7 @@ func DeleteUser(conn *mongo.Client, user *usersmodels.User) *apimodels.Error {
 
 func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmodels.User, *apimodels.Error) {
 
-	id, err := utils.StringToObjectId(user.ID)
+	id, err := utils.StringToObjectId(user.Id)
 
 	if err != nil {
 		return nil, &apimodels.Error{
@@ -526,7 +513,7 @@ func GetUser(conn *mongo.Client, user *usersmodels.User, secure bool) (*usersmod
 	}
 
 	// if user not found, return error
-	if found.ID == "" {
+	if found.Id == "" {
 		return nil, &apimodels.Error{
 			Status:  http.StatusNotFound,
 			Error:   apierror.UserNotFound,
@@ -562,7 +549,7 @@ func GetUserByEmail(conn *mongo.Client, email string, secure bool) (*usersmodels
 	}
 
 	// if user not found, return error
-	if found.ID == "" {
+	if found.Id == "" {
 		return nil, &apimodels.Error{
 			Status:  http.StatusNotFound,
 			Error:   apierror.UserNotFound,
