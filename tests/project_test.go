@@ -145,6 +145,19 @@ func TestEditProject(t *testing.T) {
 		return
 	}
 
+	// get the project again
+	project, err = projectdal.GetProject(conn, project)
+
+	if err != nil {
+		t.Errorf("Error getting project: %v", err)
+		return
+	}
+
+	if project.CreationDate == nil || project.LastUpdate == nil {
+		t.Errorf("Error updating project, dates not set")
+		return
+	}
+
 }
 
 func TestDeleteProject(t *testing.T) {
