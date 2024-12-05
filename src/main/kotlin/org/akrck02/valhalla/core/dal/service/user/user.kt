@@ -41,7 +41,6 @@ suspend fun registerUser(database: MongoDatabase, user: User?) {
     user.password?.validatePassword()
 
     val userCollection = database.getCollection<User>(DatabaseCollections.Users.id)
-
     val existingUser: User? = userCollection.withDocumentClass<User>()
         .find(Filters.eq(User::username.name, user.username))
         .firstOrNull()
