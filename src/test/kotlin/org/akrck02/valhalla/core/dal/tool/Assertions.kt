@@ -14,6 +14,7 @@ fun assertThrowsServiceException(
 ) {
     try {
         code()
+        fail("Expecting $expected \nBut no exception was raised.\n")
     } catch (actual: ServiceException) {
 
         if (areDifferentExceptions(expected, actual))
