@@ -12,8 +12,11 @@ repositories {
 }
 
 dependencies {
+
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
-    implementation 'org.akrck02:valhalla.core.sdk:1.0.0-SNAPSHOT'
+
+    // internal
+    implementation 'org.akrck02:valhalla.core.sdk:1.0.1-SNAPSHOT'
 
     // Kotlin coroutine dependency
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
@@ -25,8 +28,10 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:2.0.0'
     implementation 'org.slf4j:slf4j-simple:2.0.0'
 
-    //Env
+    // Env file processing
     implementation 'io.github.cdimascio:dotenv-kotlin:6.4.2'
+
+
 }
 
 test {
@@ -37,6 +42,10 @@ kotlin {
     jvmToolchain(21)
 }
 
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
 
 publishing {
     publications {
