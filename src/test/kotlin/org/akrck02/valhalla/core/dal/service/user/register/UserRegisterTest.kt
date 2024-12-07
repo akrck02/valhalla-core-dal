@@ -35,7 +35,7 @@ class UserRegisterTest : BaseDataAccessTest() {
     }
 
     @Test
-    fun registerEmptyUsername() {
+    fun `register with empty username`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
@@ -43,16 +43,22 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Username cannot be empty.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(username = null)
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(username = null)) }
+        }
+
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.InvalidRequest,
+                message = "Username cannot be empty.",
+            )
+        ) {
+            runBlocking { userRepository.register(CorrectUser.copy(username = "")) }
         }
     }
 
     @Test
-    fun registerEmptyEmail() {
+    fun `register with empty email`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
@@ -60,16 +66,22 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email cannot be empty.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(email = null)
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(email = null)) }
+        }
+
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.InvalidRequest,
+                message = "Email cannot be empty.",
+            )
+        ) {
+            runBlocking { userRepository.register(CorrectUser.copy(email = "")) }
         }
     }
 
     @Test
-    fun registerNoAtEmail() {
+    fun `register with not at email`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
@@ -77,16 +89,12 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email must have one @.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(email = "akrck02.com")
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(email = "akrck02.com")) }
         }
     }
 
     @Test
-    fun registerNoDotEmail() {
+    fun `register with not dot email`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
@@ -94,16 +102,12 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email must have at least one dot.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(email = "akrck02@com")
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(email = "akrck02@com")) }
         }
     }
 
     @Test
-    fun registerShortEmail() {
+    fun `register with short email`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
@@ -111,16 +115,12 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email must have at least $MINIMUM_CHARACTERS_FOR_EMAIL characters.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(email = "com")
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(email = "com")) }
         }
     }
 
     @Test
-    fun registerEmptyPassword() {
+    fun `register with empty password`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
@@ -128,16 +128,22 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Password cannot be empty.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(password = null)
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(password = null)) }
+        }
+
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.InvalidRequest,
+                message = "Password cannot be empty.",
+            )
+        ) {
+            runBlocking { userRepository.register(CorrectUser.copy(password = "")) }
         }
     }
 
     @Test
-    fun registerShortPassword() {
+    fun `register with short password`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
@@ -154,53 +160,83 @@ class UserRegisterTest : BaseDataAccessTest() {
     }
 
     @Test
-    fun registerNotAlphanumericPassword() {
+    fun `register with not alphanumeric password`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
                 code = ErrorCode.InvalidRequest,
-                message = "Password must have at least $MINIMUM_CHARACTERS_FOR_PASSWORD characters.",
+                message = "Password must have at least one number.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(password = "123456789AbCdEf*")
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(password = "#Aaaaaaaaaaaaaaa")) }
         }
     }
 
     @Test
-    fun registerNotUppercasePassword() {
+    fun `register with not uppercase password`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
                 code = ErrorCode.InvalidRequest,
-                message = "Password must have at least one uppercase character.",
+                message = "Password must have at least one lowercase and uppercase character.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(password = "#aeeeeeeeeeeeeeee")
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(password = "aeeeeeeeeeeeeeee")) }
         }
     }
 
     @Test
-    fun registerNotLowercasePassword() {
+    fun `register with not lowercase password`() {
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
                 code = ErrorCode.InvalidRequest,
-                message = "Password must have at least one lowercase character.",
+                message = "Password must have at least one lowercase and uppercase character.",
             )
         ) {
-            runBlocking {
-                userRepository.register(
-                    CorrectUser.copy(password = "#AEEEEEEEEEEEEEE")
-                )
-            }
+            runBlocking { userRepository.register(CorrectUser.copy(password = "AEEEEEEEEEEEEEEE")) }
         }
+    }
+
+    @Test
+    fun `register with not special character password`() {
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.InvalidRequest,
+                message = "Password must have at least one special character.",
+            )
+        ) {
+            runBlocking { userRepository.register(CorrectUser.copy(password = "AmazingPassword2000")) }
+        }
+
+        runBlocking {
+            userRepository.register(CorrectUser.copy(email = "0001@mail.com", password = "#AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0002@mail.com", password = "*AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0004@mail.com", password = "?AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0005@mail.com", password = "¿AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0006@mail.com", password = "¡AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0007@mail.com", password = "!AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0008@mail.com", password = "&AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0009@mail.com", password = "^AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0010@mail.com", password = "\$AmazingPassword2000"))
+            userRepository.register(CorrectUser.copy(email = "0011@mail.com", password = "%AmazingPassword2000"))
+        }
+    }
+
+    @Test
+    fun `register user that already exists`() {
+
+        runBlocking { userRepository.register(CorrectUser) }
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.UserAlreadyExists,
+                message = "User already exists.",
+            )
+        ) {
+            runBlocking { userRepository.register(CorrectUser) }
+        }
+
     }
 }

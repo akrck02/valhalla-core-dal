@@ -56,7 +56,7 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
 
         val userCollection = database.getCollection<Document>(DatabaseCollections.Users.id)
         val existingUser: User? = userCollection.withDocumentClass<Document>()
-            .find(Filters.eq(User::username.name, user.username))
+            .find(Filters.eq(User::email.name, user.email))
             .firstOrNull()
             .asUser()
 
