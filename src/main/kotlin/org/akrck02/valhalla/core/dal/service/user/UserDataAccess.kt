@@ -7,14 +7,14 @@ import org.akrck02.valhalla.core.dal.database.DatabaseCollections
 import org.akrck02.valhalla.core.dal.database.mongoIdEquals
 import org.akrck02.valhalla.core.dal.model.asDocument
 import org.akrck02.valhalla.core.dal.model.asUser
+import org.akrck02.valhalla.core.dal.model.getUpdatesToBeDone
+import org.akrck02.valhalla.core.dal.model.validateCompulsoryProperties
 import org.akrck02.valhalla.core.sdk.error.ErrorCode
 import org.akrck02.valhalla.core.sdk.model.device.Device
 import org.akrck02.valhalla.core.sdk.model.exception.ServiceException
 import org.akrck02.valhalla.core.sdk.model.http.HttpStatusCode
 import org.akrck02.valhalla.core.sdk.model.user.User
 import org.akrck02.valhalla.core.sdk.repository.UserRepository
-import org.akrck02.valhalla.core.sdk.validation.validateEmail
-import org.akrck02.valhalla.core.sdk.validation.validatePassword
 import org.bson.Document
 import org.bson.types.ObjectId
 
@@ -28,36 +28,12 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
 
     override suspend fun register(user: User?): String {
 
-        user ?: throw ServiceException(
-            status = HttpStatusCode.BadRequest,
-            code = ErrorCode.InvalidRequest,
-            message = "User cannot be empty."
-        )
-
-        user.takeIf { it.email.isNullOrBlank().not() } ?: throw ServiceException(
-            status = HttpStatusCode.BadRequest,
-            code = ErrorCode.InvalidEmail,
-            message = "Email cannot be empty."
-        )
-
-        user.takeIf { it.password.isNullOrBlank().not() } ?: throw ServiceException(
-            status = HttpStatusCode.BadRequest,
-            code = ErrorCode.InvalidPassword,
-            message = "Password cannot be empty."
-        )
-
-        user.takeIf { it.username.isNullOrBlank().not() } ?: throw ServiceException(
-            status = HttpStatusCode.BadRequest,
-            code = ErrorCode.InvalidRequest,
-            message = "Username cannot be empty."
-        )
-
-        user.email?.validateEmail()
-        user.password?.validatePassword()
+        user.validateCompulsoryProperties()
 
         val userCollection = database.getCollection<Document>(DatabaseCollections.Users.id)
+        val sameMailFilter = Filters.eq(User::email.name, user!!.email)
         val existingUser: User? = userCollection.withDocumentClass<Document>()
-            .find(Filters.eq(User::email.name, user.email))
+            .find(sameMailFilter)
             .firstOrNull()
             .asUser()
 
@@ -79,6 +55,7 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
 
         return insertedId.asObjectId().value.toHexString()
     }
+
 
     override suspend fun get(id: String?, secure: Boolean?): User {
 
@@ -148,7 +125,22 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
     }
 
     override suspend fun update(id: String?, user: User?) {
-        TODO("Not yet implemented")
+
+        id.takeIf { it.isNullOrBlank().not() } ?: throw ServiceException(
+            status = HttpStatusCode.BadRequest,
+            code = ErrorCode.InvalidRequest,
+            message = "User id cannot be empty."
+        )
+
+        user.validateCompulsoryProperties()
+
+        val idFilter = Filters.eq("_id", ObjectId(id))
+        user!!.id = id
+
+        val userCollection = database.getCollection<Document>(DatabaseCollections.Users.id)
+        val existingUser: User = get(id, false)
+        userCollection.updateOne(idFilter, existingUser.getUpdatesToBeDone(user))
+
     }
 
     override suspend fun updateProfilePicture(id: String?, picture: ByteArray?) {
