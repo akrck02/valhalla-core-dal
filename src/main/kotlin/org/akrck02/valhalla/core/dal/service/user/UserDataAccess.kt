@@ -143,7 +143,6 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
 
     }
 
-
     override suspend fun update(id: String?, user: User?) {
         TODO("Not yet implemented")
     }
