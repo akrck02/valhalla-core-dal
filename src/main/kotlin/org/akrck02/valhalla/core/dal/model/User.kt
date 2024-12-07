@@ -13,18 +13,18 @@ fun User?.asDocument(): Document? {
 
     this ?: return null
     val doc = Document()
-        .append(User::username.name, username)
-        .append(User::email.name, email)
-        .append(User::password.name, password)
-        .append(User::validated.name, validated)
-        .append(User::validationCode.name, validationCode)
-        .append(User::profilePicturePath.name, profilePicturePath)
-        .append(User::creationTime.name, creationTime)
+        .append(User::username.name.lowercase(), username)
+        .append(User::email.name.lowercase(), email)
+        .append(User::password.name.lowercase(), password)
+        .append(User::validated.name.lowercase(), validated)
+        .append(User::validationCode.name.lowercase(), validationCode)
+        .append(User::profilePicturePath.name.lowercase(), profilePicturePath)
+        .append(User::creationTime.name.lowercase(), creationTime)
 
     id?.let {
         doc.append("_id", id ?: ObjectId(id))
     }
-    
+
     return doc
 }
 
@@ -37,13 +37,13 @@ fun Document?.asUser(): User? {
     this ?: return null
     return User(
         id = getObjectId("_id").toHexString(),
-        username = getString(User::username.name),
-        email = getString(User::email.name),
-        password = getString(User::password.name),
-        validated = getBoolean(User::validated.name),
-        validationCode = getString(User::validationCode.name),
-        profilePicturePath = getString(User::profilePicturePath.name),
-        creationTime = getLong(User::creationTime.name)
+        username = getString(User::username.name.lowercase()),
+        email = getString(User::email.name.lowercase()),
+        password = getString(User::password.name.lowercase()),
+        validated = getBoolean(User::validated.name.lowercase()),
+        validationCode = getString(User::validationCode.name.lowercase()),
+        profilePicturePath = getString(User::profilePicturePath.name.lowercase()),
+        creationTime = getLong(User::creationTime.name.lowercase())
     )
 }
 

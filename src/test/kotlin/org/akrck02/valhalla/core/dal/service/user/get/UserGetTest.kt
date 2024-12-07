@@ -4,6 +4,10 @@ import kotlinx.coroutines.runBlocking
 import org.akrck02.valhalla.core.dal.mock.CorrectUser
 import org.akrck02.valhalla.core.dal.service.user.UserDataAccess
 import org.akrck02.valhalla.core.dal.tool.BaseDataAccessTest
+import org.akrck02.valhalla.core.dal.tool.assertThrowsServiceException
+import org.akrck02.valhalla.core.sdk.error.ErrorCode
+import org.akrck02.valhalla.core.sdk.model.exception.ServiceException
+import org.akrck02.valhalla.core.sdk.model.http.HttpStatusCode
 import org.akrck02.valhalla.core.sdk.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,7 +25,7 @@ class UserGetTest : BaseDataAccessTest() {
     }
 
     @Test
-    fun `get user (happy path)`() = runBlocking {
+    fun `get user by id (happy path)`() = runBlocking {
 
         val user = CorrectUser.copy()
         user.id = userRepository.register(user)
@@ -29,13 +33,129 @@ class UserGetTest : BaseDataAccessTest() {
 
         val foundUser = userRepository.get(user.id, secure = false)
         assertEquals(user, foundUser)
-        println("User ${user.username} (id: ${user.id}) found.")
+        println("User ${foundUser.username} (id: ${foundUser.id}) found.")
 
     }
 
     @Test
-    fun `get user that does not exists`() = runBlocking {
+    fun `get secure user by id (happy path)`() = runBlocking {
 
+        val user = CorrectUser.copy()
+        user.id = userRepository.register(user)
+        println("Inserted user with id ${user.id}.")
+
+        val foundUser = userRepository.get(user.id, secure = true)
+        assertEquals(user.apply { password = null }, foundUser)
+        println("User ${foundUser.username} (id: ${foundUser.id}) found.")
+
+    }
+
+    @Test
+    fun `get user by empty id`() = runBlocking {
+
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.InvalidRequest,
+                message = "User id cannot be empty.",
+            )
+        ) {
+            userRepository.get("")
+        }
+
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.InvalidRequest,
+                message = "User id cannot be empty.",
+            )
+        ) {
+            userRepository.get(null)
+        }
+
+    }
+
+    @Test
+    fun `get user by not existing id`() = runBlocking {
+
+        val id = "6754a58aeecc751512e130a2"
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.NotFound,
+                message = "User with id $id does not exist.",
+            )
+        ) {
+            userRepository.get(id)
+        }
+
+    }
+
+
+    @Test
+    fun `get user by email (happy path)`() = runBlocking {
+
+        val user = CorrectUser.copy()
+        user.id = userRepository.register(user)
+        println("Inserted user with email ${user.email}.")
+
+        val foundUser = userRepository.getByEmail(user.email, secure = false)
+        assertEquals(user, foundUser)
+        println("User ${foundUser.username} (email: ${foundUser.email}) found.")
+
+    }
+
+    @Test
+    fun `get secure user by email (happy path)`() = runBlocking {
+
+        val user = CorrectUser.copy()
+        user.id = userRepository.register(user)
+        println("Inserted user with email ${user.email}.")
+
+        val foundUser = userRepository.getByEmail(user.email, secure = true)
+        assertEquals(user.apply { password = null }, foundUser)
+        println("User ${foundUser.username} (email: ${foundUser.email}) found.")
+
+    }
+
+    @Test
+    fun `get user by empty email`() = runBlocking {
+
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.InvalidRequest,
+                message = "User email cannot be empty.",
+            )
+        ) {
+            userRepository.getByEmail("")
+        }
+
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.InvalidRequest,
+                message = "User email cannot be empty.",
+            )
+        ) {
+            userRepository.getByEmail(null)
+        }
+
+    }
+
+    @Test
+    fun `get user by not existing email`() = runBlocking {
+
+        val email = "thismailisfake@fakeorganitation.org"
+        assertThrowsServiceException(
+            ServiceException(
+                status = HttpStatusCode.BadRequest,
+                code = ErrorCode.NotFound,
+                message = "User with email $email does not exist.",
+            )
+        ) {
+            userRepository.getByEmail(email)
+        }
 
     }
 }

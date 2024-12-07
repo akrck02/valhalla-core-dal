@@ -16,6 +16,7 @@ import org.akrck02.valhalla.core.sdk.repository.UserRepository
 import org.akrck02.valhalla.core.sdk.validation.validateEmail
 import org.akrck02.valhalla.core.sdk.validation.validatePassword
 import org.bson.Document
+import org.bson.types.ObjectId
 
 /**
  * This class represents the data access layer
@@ -111,9 +112,10 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
         )
 
         val userCollection = database.getCollection<User>(DatabaseCollections.Users.id)
-        val user: User? = userCollection.withDocumentClass<User>()
+        val user: User? = userCollection.withDocumentClass<Document>()
             .find(Filters.eq(User::email.name, email))
             .firstOrNull()
+            .asUser()
 
         user ?: throw ServiceException(
             status = HttpStatusCode.BadRequest,
@@ -132,8 +134,10 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
             message = "User id cannot be empty."
         )
 
+        get(id)
+
         val userCollection = database.getCollection<User>(DatabaseCollections.Users.id)
-        val result = userCollection.deleteOne(Filters.eq(User::id.name))
+        val result = userCollection.deleteOne(Filters.eq("_id", ObjectId(id)))
 
         takeIf { result.deletedCount > 0 } ?: throw ServiceException(
             status = HttpStatusCode.InternalServerError,
