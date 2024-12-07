@@ -47,7 +47,7 @@ fun User?.validateCompulsoryProperties() {
 }
 
 /**
- * Extension function to convert a User to a Document
+ * Extension function to convert a user to a document
  * so mongodb can understand.
  * @return Serialized mongodb document
  */
@@ -70,7 +70,12 @@ fun User?.asDocument(): Document? {
     return doc
 }
 
-fun User.getUpdatesToBeDone(other: User): Bson {
+/**
+ * Get the updates to be done from one user to match the other
+ * @param other The user to compare with
+ * @return BSON document with the changes or null
+ */
+fun User.getUpdatesToBeDone(other: User): Bson? {
 
     val updates = mutableListOf<Bson>()
 
@@ -78,15 +83,11 @@ fun User.getUpdatesToBeDone(other: User): Bson {
         updates.add(Updates.set(User::username.name.lowercase(), other.username))
     }
 
-    if (other.password != this.password) {
-        updates.add(Updates.set(User::password.name.lowercase(), other.password))
-    }
-
-    return Updates.combine(updates)
+    return if (updates.isEmpty()) null else Updates.combine(updates)
 }
 
 /**
- * Extension function to convert a Document to a User
+ * Extension function to convert a document to a user
  * so mongodb can understand.
  * @return Deserialized user
  */

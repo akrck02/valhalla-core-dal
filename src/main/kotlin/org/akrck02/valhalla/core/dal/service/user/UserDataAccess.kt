@@ -16,6 +16,7 @@ import org.akrck02.valhalla.core.sdk.model.http.HttpStatusCode
 import org.akrck02.valhalla.core.sdk.model.user.User
 import org.akrck02.valhalla.core.sdk.repository.UserRepository
 import org.bson.Document
+import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 
 /**
@@ -139,7 +140,15 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
 
         val userCollection = database.getCollection<Document>(DatabaseCollections.Users.id)
         val existingUser: User = get(id, false)
-        userCollection.updateOne(idFilter, existingUser.getUpdatesToBeDone(user))
+
+        val updates: Bson? = existingUser.getUpdatesToBeDone(user)
+        updates ?: throw ServiceException(
+            status = HttpStatusCode.BadRequest,
+            code = ErrorCode.NothingChanged,
+            message = "No changes needed."
+        )
+
+        userCollection.updateOne(idFilter, updates)
 
     }
 
