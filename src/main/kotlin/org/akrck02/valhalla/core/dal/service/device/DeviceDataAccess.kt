@@ -1,17 +1,26 @@
 package org.akrck02.valhalla.core.dal.service.device
 
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
-import org.akrck02.valhalla.core.dal.database.DatabaseCollections
 import org.akrck02.valhalla.core.sdk.error.ErrorCode
 import org.akrck02.valhalla.core.sdk.model.device.Device
 import org.akrck02.valhalla.core.sdk.model.exception.ServiceException
 import org.akrck02.valhalla.core.sdk.model.http.HttpStatusCode
 import org.akrck02.valhalla.core.sdk.repository.DeviceRepository
-import org.bson.Document
+import org.akrck02.valhalla.core.sdk.repository.UserRepository
 
-class DeviceDataAccess(private val database: MongoDatabase) : DeviceRepository {
+class DeviceDataAccess(
+    private val database: MongoDatabase,
+    private val userRepository: UserRepository
 
-    override suspend fun register(device: Device?): String {
+) : DeviceRepository {
+
+    override suspend fun register(userId: String?, device: Device?): String {
+
+        userId ?: throw ServiceException(
+            status = HttpStatusCode.BadRequest,
+            code = ErrorCode.InvalidRequest,
+            message = "User id cannot be empty."
+        )
 
         device ?: throw ServiceException(
             status = HttpStatusCode.BadRequest,
@@ -19,30 +28,40 @@ class DeviceDataAccess(private val database: MongoDatabase) : DeviceRepository {
             message = "Device cannot be empty."
         )
 
-        val devices = database.getCollection<Document>(DatabaseCollections.Devices.id)
+        var user = userRepository.get(userId)
+        var foundDevice = user.devices.find { (it.userAgent == device.userAgent).and(it.address == device.address) }
+        when (null == foundDevice) {
+            true -> {
+                user.devices.add(device.apply { token = "AAA" })
+            }
 
-        // TODO:
-        //      1. if a device exists with the same address and userAgent for a user
-        //          update the auth token and return it.
-        //      2. Else create it with a generated token
+            false -> {
+                foundDevice!!.apply { token = "BBB" }
+            }
+        }
 
-        return ""
+        userRepository.update(userId, user)
+        user = userRepository.get(userId)
+
+        foundDevice = user.devices.find { (it.userAgent == device.userAgent).and(it.address == device.address) }
+        foundDevice ?: throw ServiceException(
+            status = HttpStatusCode.BadRequest,
+            code = ErrorCode.InvalidRequest,
+            message = "Device not found."
+        )
+
+        return foundDevice.token!!
     }
 
-    override suspend fun get(id: String?): Device {
+    override suspend fun get(userId: String?, id: String?): Device {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getAllByOwner(userId: String?): List<Device> {
+    override suspend fun getAll(userId: String?): List<Device> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getByAuth(token: String?): Device {
+    override suspend fun getByAuth(userId: String?, token: String?): Device {
         TODO("Not yet implemented")
     }
-
-    override suspend fun update(id: String?, device: Device?) {
-        TODO("Not yet implemented")
-    }
-
 }

@@ -12,6 +12,5 @@ enum class Databases(val id: String) {
  * This enumeration represents the different collections or tables used by the service
  */
 enum class DatabaseCollections(val id: String) {
-    Users("users"),
-    Devices("devices")
+    Users("users")
 }

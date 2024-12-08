@@ -133,7 +133,7 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
             message = "User id cannot be empty."
         )
 
-        user.validateCompulsoryProperties()
+        user.validateCompulsoryProperties(validatePassword = false)
 
         val idFilter = Filters.eq("_id", ObjectId(id))
         user!!.id = id

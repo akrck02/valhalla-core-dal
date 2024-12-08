@@ -14,9 +14,10 @@ import org.bson.types.ObjectId
 /**
  * Extension function to validate compulsory
  * properties for a user
+ * @param validatePassword If password was validated
  * @throws ServiceException if a requirement is not being fulfilled
  */
-fun User?.validateCompulsoryProperties() {
+fun User?.validateCompulsoryProperties(validatePassword: Boolean = true) {
 
     this ?: throw ServiceException(
         status = HttpStatusCode.BadRequest,
@@ -30,11 +31,13 @@ fun User?.validateCompulsoryProperties() {
         message = "Email cannot be empty."
     )
 
-    takeIf { it.password.isNullOrBlank().not() } ?: throw ServiceException(
-        status = HttpStatusCode.BadRequest,
-        code = ErrorCode.InvalidPassword,
-        message = "Password cannot be empty."
-    )
+    if (validatePassword) {
+        takeIf { it.password.isNullOrBlank().not() } ?: throw ServiceException(
+            status = HttpStatusCode.BadRequest,
+            code = ErrorCode.InvalidPassword,
+            message = "Password cannot be empty."
+        )
+    }
 
     takeIf { it.username.isNullOrBlank().not() } ?: throw ServiceException(
         status = HttpStatusCode.BadRequest,
@@ -43,7 +46,9 @@ fun User?.validateCompulsoryProperties() {
     )
 
     email?.validateEmail()
-    password?.validatePassword()
+    if (validatePassword) {
+        password?.validatePassword()
+    }
 }
 
 /**
@@ -66,7 +71,6 @@ fun User?.asDocument(): Document? {
     id?.let {
         doc.append("_id", id ?: ObjectId(id))
     }
-
     return doc
 }
 
@@ -83,6 +87,17 @@ fun User.getUpdatesToBeDone(other: User): Bson? {
         updates.add(Updates.set(User::username.name.lowercase(), other.username))
     }
 
+    var devicesChanged = false
+    other.devices.forEach {
+        if (this.devices.contains(it).not()) {
+            devicesChanged = true
+        }
+    }
+
+    if (devicesChanged) {
+        updates.add(Updates.set(User::devices.name.lowercase(), other.devices))
+    }
+
     return if (updates.isEmpty()) null else Updates.combine(updates)
 }
 
@@ -93,7 +108,7 @@ fun User.getUpdatesToBeDone(other: User): Bson? {
  */
 fun Document?.asUser(): User? {
     this ?: return null
-    return User(
+    val user = User(
         id = getObjectId("_id").toHexString(),
         username = getString(User::username.name.lowercase()),
         email = getString(User::email.name.lowercase()),
@@ -103,6 +118,13 @@ fun Document?.asUser(): User? {
         profilePicturePath = getString(User::profilePicturePath.name.lowercase()),
         creationTime = getLong(User::creationTime.name.lowercase())
     )
+
+
+    getList(User::devices.name.lowercase(), Document::class.java)?.forEach {
+        user.devices.add(it.asDevice()!!)
+    }
+
+    return user
 }
 
 
