@@ -5,8 +5,6 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import kotlinx.coroutines.flow.firstOrNull
 import org.akrck02.valhalla.core.dal.database.DatabaseCollections
 import org.akrck02.valhalla.core.dal.database.mongoIdEquals
-import org.akrck02.valhalla.core.dal.model.asDocument
-import org.akrck02.valhalla.core.dal.model.asUser
 import org.akrck02.valhalla.core.dal.model.getUpdatesToBeDone
 import org.akrck02.valhalla.core.dal.model.validateCompulsoryProperties
 import org.akrck02.valhalla.core.sdk.error.ErrorCode
@@ -33,10 +31,9 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
 
         val userCollection = database.getCollection<Document>(DatabaseCollections.Users.id)
         val sameMailFilter = Filters.eq(User::email.name, user!!.email)
-        val existingUser: User? = userCollection.withDocumentClass<Document>()
+        val existingUser: User? = userCollection.withDocumentClass<User>()
             .find(sameMailFilter)
             .firstOrNull()
-            .asUser()
 
         existingUser?.let {
             throw ServiceException(
@@ -47,7 +44,7 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
         }
 
         user.id = null
-        val insertedId = userCollection.insertOne(user.asDocument()!!).insertedId
+        val insertedId = userCollection.withDocumentClass<User>().insertOne(user).insertedId
         insertedId ?: throw ServiceException(
             status = HttpStatusCode.InternalServerError,
             code = ErrorCode.DatabaseError,
@@ -67,10 +64,9 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
         )
 
         val userCollection = database.getCollection<User>(DatabaseCollections.Users.id)
-        val user: User? = userCollection.withDocumentClass<Document>()
+        val user: User? = userCollection.withDocumentClass<User>()
             .find(mongoIdEquals(id))
             .firstOrNull()
-            .asUser()
 
         user ?: throw ServiceException(
             status = HttpStatusCode.BadRequest,
@@ -90,10 +86,9 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
         )
 
         val userCollection = database.getCollection<User>(DatabaseCollections.Users.id)
-        val user: User? = userCollection.withDocumentClass<Document>()
+        val user: User? = userCollection.withDocumentClass<User>()
             .find(Filters.eq(User::email.name, email))
             .firstOrNull()
-            .asUser()
 
         user ?: throw ServiceException(
             status = HttpStatusCode.BadRequest,
@@ -138,7 +133,7 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
         val idFilter = Filters.eq("_id", ObjectId(id))
         user!!.id = id
 
-        val userCollection = database.getCollection<Document>(DatabaseCollections.Users.id)
+        val userCollection = database.getCollection<User>(DatabaseCollections.Users.id)
         val existingUser: User = get(id, false)
 
         val updates: Bson? = existingUser.getUpdatesToBeDone(user)
