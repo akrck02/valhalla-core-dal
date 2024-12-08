@@ -2,7 +2,9 @@ package org.akrck02.valhalla.core.dal.database
 
 import com.mongodb.client.model.Filters
 import com.mongodb.kotlin.client.coroutine.MongoClient
+import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import org.akrck02.valhalla.core.dal.configuration.DatabaseConnectionConfiguration
+import org.akrck02.valhalla.core.sdk.model.exception.ServiceException
 import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 
@@ -17,6 +19,12 @@ class Mongo : Database {
         client = MongoClient.create(
             connectionString = getConnectionString(configuration)
         )
+    }
+
+    fun getDatabase(database: Databases): MongoDatabase {
+        val database = client?.getDatabase(databaseName = Databases.ValhallaTest.id)
+        database ?: throw ServiceException(message = "Cannot connect to database")
+        return database
     }
 
     /**

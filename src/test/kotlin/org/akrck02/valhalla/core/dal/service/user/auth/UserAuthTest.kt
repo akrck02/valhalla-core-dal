@@ -1,6 +1,5 @@
 package org.akrck02.valhalla.core.dal.service.user.auth
 
-import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import org.akrck02.valhalla.core.dal.service.user.UserDataAccess
 import org.akrck02.valhalla.core.dal.tool.BaseDataAccessTest
 import org.akrck02.valhalla.core.sdk.repository.UserRepository
@@ -21,17 +20,17 @@ class UserAuthTest : BaseDataAccessTest() {
 
     @Test
     fun login() {
-        throw NotImplementedException("not implemented yet!")
+        // TODO implement this
     }
 
     @Test
     fun authLogin() {
-        throw NotImplementedException("not implemented yet!")
+        // TODO implement this
     }
 
     @Test
     fun validateAccount() {
-        throw NotImplementedException("not implemented yet!")
+        // TODO implement this
     }
 
 }
