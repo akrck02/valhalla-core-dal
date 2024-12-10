@@ -41,7 +41,7 @@ repositories {
 
 // Testing section
 tasks.test {
-    useJUnit()
+    useJUnitPlatform()
 }
 
 // Compilation section
@@ -68,7 +68,7 @@ publishing {
 // Dependency section
 dependencies {
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    testImplementation(kotlin("test"))
 
     // internal
     implementation("org.akrck02:valhalla.core.sdk:$valhallaSdkVersion")
