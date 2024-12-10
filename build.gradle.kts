@@ -23,8 +23,19 @@ plugins {
 }
 
 // Repositories
+val selfHostedRepository = repositories.maven {
+    name = mavenServerName
+    url = uri(mavenServerUrl)
+    credentials {
+        username = mavenServerUser
+        password = mavenServerPassword
+    }
+    isAllowInsecureProtocol = true
+}
+
 repositories {
     mavenCentral()
+    selfHostedRepository
     mavenLocal()
 }
 
@@ -47,15 +58,7 @@ java {
 publishing {
     repositories {
         mavenLocal()
-        maven {
-            name = mavenServerName
-            url = uri(mavenServerUrl)
-            credentials {
-                username = mavenServerUser
-                password = mavenServerPassword
-            }
-            isAllowInsecureProtocol = true
-        }
+        selfHostedRepository
     }
     publications.withType<MavenPublication> {
         from(components["java"])
