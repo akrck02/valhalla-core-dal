@@ -76,7 +76,9 @@ class DeviceDataAccess(
             message = "Device id cannot be empty."
         )
 
-        TODO("Not yet implemented")
+        //FIXME: By user, address and userAgent
+        TODO()
+
     }
 
     override suspend fun getAll(userId: String?): List<Device> {
@@ -87,7 +89,22 @@ class DeviceDataAccess(
             message = "User id cannot be empty."
         )
 
-        TODO("Not yet implemented")
+        val users = database.getCollection<User>(DatabaseCollections.Users.id)
+        val foundUserDevices = users.find<User>(filter = idEqualsFilter(userId))
+            .projection(
+                Projections.include(
+                    "devices.token",
+                    "devices.userAgent",
+                    "devices.address"
+                )
+            )
+            .firstOrNull()
+
+        return foundUserDevices?.devices ?: throw ServiceException(
+            status = HttpStatusCode.BadRequest,
+            code = ErrorCode.NotFound,
+            message = "Devices not found."
+        )
     }
 
     override suspend fun getByAuth(userId: String?, token: String?): Device {
