@@ -20,10 +20,13 @@ val valhallaSdkVersion: String = providers.gradleProperty("valhalla.core.sdk.ver
 plugins {
     id("org.jetbrains.kotlin.jvm") version "2.0.21"
     id("maven-publish")
+    id("idea")
 }
 
 // Repositories
 repositories {
+    mavenCentral()
+    mavenLocal()
     repositories.maven {
         name = mavenServerName
         url = uri(mavenServerUrl)
@@ -33,8 +36,6 @@ repositories {
         }
         isAllowInsecureProtocol = true
     }
-    mavenCentral()
-    mavenLocal()
 }
 
 // Testing section
@@ -50,6 +51,13 @@ kotlin {
 java {
     withSourcesJar()
     withJavadocJar()
+}
+
+// Idea
+idea {
+    module {
+        isDownloadSources = true
+    }
 }
 
 // Publishing section
