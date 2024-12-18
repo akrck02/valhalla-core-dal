@@ -10,6 +10,7 @@ import org.valhalla.core.dal.tool.BaseDataAccessTest
 import org.valhalla.core.sdk.model.device.Device
 import org.valhalla.core.sdk.repository.DeviceRepository
 import org.valhalla.core.sdk.repository.UserRepository
+import kotlin.test.assertEquals
 
 class DeviceRegisterTest : BaseDataAccessTest() {
 
@@ -21,7 +22,7 @@ class DeviceRegisterTest : BaseDataAccessTest() {
     @BeforeEach
     fun resetDatabaseImpl() {
         userRepository = UserDataAccess(database!!)
-        deviceRepository = DeviceDataAccess(userRepository)
+        deviceRepository = DeviceDataAccess(database = database!!, userRepository = userRepository)
     }
 
     @Test
@@ -32,11 +33,15 @@ class DeviceRegisterTest : BaseDataAccessTest() {
 
         val device = Device(
             userAgent = "Test/valhalla | Linux | CPU x86",
-            address = "127.0.0.1"
+            address = "127.0.0.1",
+            token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
         )
 
         device.token = deviceRepository.register(user.id, device)
-        println(device)
-        println()
+        val obtainedDevice = deviceRepository.getByAuth(user.id, device.token)
+
+        assertEquals(device, obtainedDevice)
+
+
     }
 }

@@ -9,12 +9,14 @@ import org.valhalla.core.sdk.model.http.HttpStatusCode
 import org.valhalla.core.sdk.model.user.User
 import org.valhalla.core.sdk.validation.validateEmail
 import org.valhalla.core.sdk.validation.validatePassword
+import java.security.MessageDigest
+
+private const val DEFAULT_ENCRYPTION_METHOD = "SHA-256"
 
 /**
  * Extension function to validate compulsory
- * properties for a user
- * @param validatePassword If password was validated
- * @throws ServiceException if a requirement is not being fulfilled
+ * properties for a user.
+ * Throws [ServiceException] if a requirement is not being fulfilled.
  */
 @Suppress("unused")
 fun User?.validateCompulsoryProperties(validatePassword: Boolean = true) {
@@ -52,11 +54,7 @@ fun User?.validateCompulsoryProperties(validatePassword: Boolean = true) {
 }
 
 
-/**
- * Get the updates to be done from one user to match the other
- * @param other The user to compare with
- * @return BSON document with the changes or null
- */
+/** Get the updates to be done from one user to match the other [User] data in [Bson] format. */
 @Suppress("unused")
 fun User.getUpdatesToBeDone(other: User): Bson? {
 
@@ -80,3 +78,13 @@ fun User.getUpdatesToBeDone(other: User): Bson? {
     return if (updates.isEmpty()) null else Updates.combine(updates)
 }
 
+/** Hash the [User] password */
+@Suppress("unused")
+fun User.hashPassword() {
+
+    password ?: return
+
+    val sha256 = MessageDigest.getInstance(DEFAULT_ENCRYPTION_METHOD)
+    sha256.update(password!!.toByteArray())
+    password = sha256.digest().joinToString("")
+}
