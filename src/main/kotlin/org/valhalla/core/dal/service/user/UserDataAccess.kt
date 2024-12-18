@@ -8,6 +8,7 @@ import org.bson.types.ObjectId
 import org.valhalla.core.dal.database.DatabaseCollections
 import org.valhalla.core.dal.database.idEqualsFilter
 import org.valhalla.core.dal.model.getUpdatesToBeDone
+import org.valhalla.core.dal.model.hashPassword
 import org.valhalla.core.dal.model.validateCompulsoryProperties
 import org.valhalla.core.sdk.error.ErrorCode
 import org.valhalla.core.sdk.model.device.Device
@@ -41,6 +42,8 @@ class UserDataAccess(private val database: MongoDatabase) : UserRepository {
         }
 
         user.id = null
+        user.hashPassword()
+
         val insertedId = userCollection.withDocumentClass<User>().insertOne(user).insertedId
         insertedId ?: throw ServiceException(
             status = HttpStatusCode.InternalServerError,

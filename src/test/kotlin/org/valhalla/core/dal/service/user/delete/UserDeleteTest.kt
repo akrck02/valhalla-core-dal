@@ -3,7 +3,7 @@ package org.valhalla.core.dal.service.user.delete
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.valhalla.core.dal.mock.CorrectUser
+import org.valhalla.core.dal.mock.TestUser
 import org.valhalla.core.dal.service.user.UserDataAccess
 import org.valhalla.core.dal.tool.BaseDataAccessTest
 import org.valhalla.core.dal.tool.assertThrowsServiceException
@@ -26,7 +26,7 @@ class UserDeleteTest : BaseDataAccessTest() {
     @Test
     fun `delete by id (happy path)`() = runBlocking {
 
-        val user = CorrectUser.copy()
+        val user = TestUser.copy()
         user.id = userRepository.register(user)
         userRepository.delete(user.id)
 

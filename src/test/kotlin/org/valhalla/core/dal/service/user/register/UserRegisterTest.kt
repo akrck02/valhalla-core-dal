@@ -3,7 +3,7 @@ package org.valhalla.core.dal.service.user.register
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.valhalla.core.dal.mock.CorrectUser
+import org.valhalla.core.dal.mock.TestUser
 import org.valhalla.core.dal.service.user.UserDataAccess
 import org.valhalla.core.dal.tool.BaseDataAccessTest
 import org.valhalla.core.dal.tool.assertThrowsServiceException
@@ -29,7 +29,7 @@ class UserRegisterTest : BaseDataAccessTest() {
     @Test
     fun `register (happy path)`() = runBlocking {
         runBlocking {
-            val id = userRepository.register(CorrectUser)
+            val id = userRepository.register(TestUser.copy())
             println("Inserted user with id $id")
         }
     }
@@ -44,7 +44,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Username cannot be empty.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(username = null))
+            userRepository.register(TestUser.copy(username = null))
         }
 
         assertThrowsServiceException(
@@ -54,7 +54,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Username cannot be empty.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(username = ""))
+            userRepository.register(TestUser.copy(username = ""))
         }
     }
 
@@ -67,7 +67,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email cannot be empty.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(email = null))
+            userRepository.register(TestUser.copy(email = null))
         }
 
         assertThrowsServiceException(
@@ -77,7 +77,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email cannot be empty.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(email = ""))
+            userRepository.register(TestUser.copy(email = ""))
         }
     }
 
@@ -90,7 +90,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email must have one @.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(email = "akrck02.com"))
+            userRepository.register(TestUser.copy(email = "akrck02.com"))
         }
     }
 
@@ -103,7 +103,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email must have at least one dot.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(email = "akrck02@com"))
+            userRepository.register(TestUser.copy(email = "akrck02@com"))
         }
     }
 
@@ -116,7 +116,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Email must have at least $MINIMUM_CHARACTERS_FOR_EMAIL characters.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(email = "com"))
+            userRepository.register(TestUser.copy(email = "com"))
         }
     }
 
@@ -129,7 +129,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Password cannot be empty.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(password = null))
+            userRepository.register(TestUser.copy(password = null))
         }
 
         assertThrowsServiceException(
@@ -139,7 +139,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Password cannot be empty.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(password = ""))
+            userRepository.register(TestUser.copy(password = ""))
         }
     }
 
@@ -152,7 +152,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Password must have at least $MINIMUM_CHARACTERS_FOR_PASSWORD characters.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(password = "123"))
+            userRepository.register(TestUser.copy(password = "123"))
         }
     }
 
@@ -165,7 +165,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Password must have at least one number.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(password = "#Aaaaaaaaaaaaaaa"))
+            userRepository.register(TestUser.copy(password = "#Aaaaaaaaaaaaaaa"))
         }
     }
 
@@ -178,7 +178,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Password must have at least one lowercase and uppercase character.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(password = "aeeeeeeeeeeeeeee"))
+            userRepository.register(TestUser.copy(password = "aeeeeeeeeeeeeeee"))
         }
     }
 
@@ -191,7 +191,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Password must have at least one lowercase and uppercase character.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(password = "AEEEEEEEEEEEEEEE"))
+            userRepository.register(TestUser.copy(password = "AEEEEEEEEEEEEEEE"))
         }
     }
 
@@ -204,26 +204,26 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "Password must have at least one special character.",
             )
         ) {
-            userRepository.register(CorrectUser.copy(password = "AmazingPassword2000"))
+            userRepository.register(TestUser.copy(password = "AmazingPassword2000"))
         }
 
-        userRepository.register(CorrectUser.copy(email = "0001@mail.com", password = "#AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0002@mail.com", password = "*AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0004@mail.com", password = "?AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0005@mail.com", password = "¿AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0006@mail.com", password = "¡AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0007@mail.com", password = "!AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0008@mail.com", password = "&AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0009@mail.com", password = "^AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0010@mail.com", password = "\$AmazingPassword2000"))
-        userRepository.register(CorrectUser.copy(email = "0011@mail.com", password = "%AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0001@mail.com", password = "#AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0002@mail.com", password = "*AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0004@mail.com", password = "?AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0005@mail.com", password = "¿AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0006@mail.com", password = "¡AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0007@mail.com", password = "!AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0008@mail.com", password = "&AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0009@mail.com", password = "^AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0010@mail.com", password = "\$AmazingPassword2000"))
+        userRepository.register(TestUser.copy(email = "0011@mail.com", password = "%AmazingPassword2000"))
 
     }
 
     @Test
     fun `register user that already exists`() = runBlocking {
 
-        userRepository.register(CorrectUser)
+        userRepository.register(TestUser.copy())
         assertThrowsServiceException(
             ServiceException(
                 status = HttpStatusCode.BadRequest,
@@ -231,7 +231,7 @@ class UserRegisterTest : BaseDataAccessTest() {
                 message = "User already exists.",
             )
         ) {
-            userRepository.register(CorrectUser)
+            userRepository.register(TestUser.copy())
         }
 
     }

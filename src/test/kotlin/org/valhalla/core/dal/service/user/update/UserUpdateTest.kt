@@ -3,7 +3,8 @@ package org.valhalla.core.dal.service.user.update
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.valhalla.core.dal.mock.CorrectUser
+import org.valhalla.core.dal.mock.TestUser
+import org.valhalla.core.dal.model.hashPassword
 import org.valhalla.core.dal.service.user.UserDataAccess
 import org.valhalla.core.dal.tool.BaseDataAccessTest
 import org.valhalla.core.dal.tool.assertThrowsServiceException
@@ -27,11 +28,12 @@ class UserUpdateTest : BaseDataAccessTest() {
     @Test
     fun `update (happy path)`() = runBlocking {
 
-        val originalUser = CorrectUser.copy()
+        val originalUser = TestUser.copy()
         originalUser.id = userRepository.register(originalUser)
 
-        val updatedUser = CorrectUser.copy(username = "xxx_shadow_the_hedgehog_xxx")
+        val updatedUser = TestUser.copy(username = "xxx_shadow_the_hedgehog_xxx")
         userRepository.update(originalUser.id, updatedUser)
+        updatedUser.hashPassword()
 
         val databaseUser = userRepository.get(originalUser.id, false)
         assertEquals(updatedUser, databaseUser)
@@ -41,7 +43,7 @@ class UserUpdateTest : BaseDataAccessTest() {
     @Test
     fun `update nothing changed (happy path)`() = runBlocking {
 
-        val originalUser = CorrectUser.copy()
+        val originalUser = TestUser.copy()
         originalUser.id = userRepository.register(originalUser)
 
         assertThrowsServiceException(
@@ -58,7 +60,7 @@ class UserUpdateTest : BaseDataAccessTest() {
     @Test
     fun `update with empty user`(): Unit = runBlocking {
 
-        val originalUser = CorrectUser.copy()
+        val originalUser = TestUser.copy()
         originalUser.id = userRepository.register(originalUser)
 
         assertThrowsServiceException(
@@ -76,7 +78,7 @@ class UserUpdateTest : BaseDataAccessTest() {
     @Test
     fun `update with empty email`(): Unit = runBlocking {
 
-        val originalUser = CorrectUser.copy()
+        val originalUser = TestUser.copy()
         originalUser.id = userRepository.register(originalUser)
 
         assertThrowsServiceException(
@@ -103,7 +105,7 @@ class UserUpdateTest : BaseDataAccessTest() {
     @Test
     fun `update with empty username`(): Unit = runBlocking {
 
-        val originalUser = CorrectUser.copy()
+        val originalUser = TestUser.copy()
         originalUser.id = userRepository.register(originalUser)
 
         assertThrowsServiceException(

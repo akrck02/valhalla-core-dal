@@ -3,7 +3,7 @@ package org.valhalla.core.dal.service.user.get
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.valhalla.core.dal.mock.CorrectUser
+import org.valhalla.core.dal.mock.TestUser
 import org.valhalla.core.dal.service.user.UserDataAccess
 import org.valhalla.core.dal.tool.BaseDataAccessTest
 import org.valhalla.core.dal.tool.assertThrowsServiceException
@@ -27,7 +27,7 @@ class UserGetTest : BaseDataAccessTest() {
     @Test
     fun `get user by id (happy path)`() = runBlocking {
 
-        val user = CorrectUser.copy()
+        val user = TestUser.copy()
         user.id = userRepository.register(user)
         println("Inserted user with id ${user.id}.")
 
@@ -40,7 +40,7 @@ class UserGetTest : BaseDataAccessTest() {
     @Test
     fun `get secure user by id (happy path)`() = runBlocking {
 
-        val user = CorrectUser.copy()
+        val user = TestUser.copy()
         user.id = userRepository.register(user)
         println("Inserted user with id ${user.id}.")
 
@@ -95,7 +95,7 @@ class UserGetTest : BaseDataAccessTest() {
     @Test
     fun `get user by email (happy path)`() = runBlocking {
 
-        val user = CorrectUser.copy()
+        val user = TestUser.copy()
         user.id = userRepository.register(user)
         println("Inserted user with email ${user.email}.")
 
@@ -108,7 +108,7 @@ class UserGetTest : BaseDataAccessTest() {
     @Test
     fun `get secure user by email (happy path)`() = runBlocking {
 
-        val user = CorrectUser.copy()
+        val user = TestUser.copy()
         user.id = userRepository.register(user)
         println("Inserted user with email ${user.email}.")
 
